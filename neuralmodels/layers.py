@@ -1,6 +1,4 @@
-'''
-Layout of this package is inspired by Passage https://github.com/IndicoDataSolutions/Passage
-'''
+#Layout of this package is inspired by Passage https://github.com/IndicoDataSolutions/Passage
 
 import theano
 import numpy as np
