@@ -43,24 +43,19 @@ if __name__ == '__main__':
 	X_valid = X[:,num_train:]
 	Y_valid = Y[:,num_train:]
 	
-	'''	
+	# Creating network layers
 	layers = [OneHot(num_classes),LSTM(),LSTM(),LSTM(),softmax(num_classes)]
 
 	trY = T.lmatrix()
 
+	# Initializing network
 	rnn = RNN(layers,softmax_loss,trY,1e-3)
 
+	# Fitting model
 	rnn.fitModel(X_tr,Y_tr,1,'checkpoints/',epochs,batch_size,learning_rate_decay,decay_after)
-	'''
-	#print class_ids_reverse
-	rnn = load('/home/ashesh/project/character-rnn/checkpoints/checkpoint.29')
-	#rnn.fitModel(X_tr,Y_tr,1,'checkpoints/',epochs,batch_size,learning_rate_decay,decay_after)
-	#rnn.fitModel(X_tr,Y_tr,1,'checkpoints/')
-	out = rnn.predict_language_model(X_valid[:,:1],1000,OutputSampleFromDiscrete)
-	#print out
-	text_produced =  text_prediction(class_ids_reverse,out)
-	print text_produced
-	f = open('text','w')
-	f.write(text_produced[0])
-	f.close()
 
+	# Printing a generated sentence	
+	out = rnn.predict_language_model(X_valid[:,:1],1000,OutputSampleFromDiscrete)
+	
+	# Print the sentence here
+	text_produced =  text_prediction(class_ids_reverse,out)

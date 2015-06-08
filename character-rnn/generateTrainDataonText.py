@@ -21,7 +21,7 @@ def sample_text(input_text,num_samples,len_samples,class_ids):
 
 def createTrain(filename,num_samples=1000,len_samples=300):
 	input_text = open(filename).read()
-	print len(input_text)
+	print 'Number of characters in document {0}'.format(len(input_text))
 	counter = Counter(input_text)
 	num_classes = len(counter.keys())
 	Y = range(num_classes)
@@ -33,12 +33,12 @@ def createTrain(filename,num_samples=1000,len_samples=300):
 		class_ids[t] = count
 		class_ids_reverse[count] = t
 		count+=1
+	
 	[train_data,label_data] = sample_text(input_text,num_samples,len_samples,class_ids)
 	train_data = np.transpose(train_data)
 	label_data = np.transpose(label_data)
-	print train_data.shape
-	print label_data.shape
 	# dim = T x N
+	
 	return train_data,label_data,num_classes,class_ids_reverse
 
 if __name__=="__main__":
