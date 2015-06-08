@@ -59,8 +59,8 @@ class RNN(object):
 				
 			if path and epoch % snapshot_rate == 0:
 				print 'saving snapshot checkpoint.{0}'.format(epoch)
-				save(self,"{0}/checkpoint.{1}".format(path,epoch))
-				f = open('{0}/logfile'.format(path),'w')
+				save(self,"{0}checkpoint.{1}".format(path,epoch))
+				f = open('{0}logfile'.format(path),'w')
 				for v in loss_values:
 					f.write('{0}\n'.format(v))
 				f.close()
