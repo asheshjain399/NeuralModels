@@ -1,5 +1,6 @@
 #Layout of this package is inspired by Passage https://github.com/IndicoDataSolutions/Passage
 
+import time
 import theano
 import numpy as np
 from theano import tensor as T
@@ -40,6 +41,7 @@ class RNN(object):
 		
 		loss_values = []
 		for epoch in range(epochs):
+			t0 = time.time()
 			permutation = permute(num_examples)
 			if self.X.ndim > 2:
 				trX = trX[:,permutation,:]
@@ -64,6 +66,8 @@ class RNN(object):
 				for v in loss_values:
 					f.write('{0}\n'.format(v))
 				f.close()
+			t1 = time.time()
+			print 'Epoch took {0} seconds'.format(t1-t0)
 
 			#if epoch > decay_after:
 			#	self.learning_rate *= learning_rate_decay 
