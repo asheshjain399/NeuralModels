@@ -47,14 +47,22 @@ class RNN(object):
 				trX = trX[:,permutation,:]
 			else:
 				trX = trX[:,permutation]
-			trY = trY[:,permutation]
+			
+			if self.Y.ndim > 1:
+				trY = trY[:,permutation]
+			else:
+				trY = trY[permutation]
 			
 			for j in range(batches_in_one_epoch):
 				if self.X.ndim > 2:
 					X_minibatch = trX[:,j*batch_size:(j+1)*batch_size,:]
 				else:
 					X_minibatch = trX[:,j*batch_size:(j+1)*batch_size]
-				Y_minibatch = trY[:,j*batch_size:(j+1)*batch_size]
+				if self.Y.ndim > 1:
+					Y_minibatch = trY[:,j*batch_size:(j+1)*batch_size]
+				else:
+					Y_minibatch = trY[j*batch_size:(j+1)*batch_size]
+
 				loss = self.train(X_minibatch,Y_minibatch)
 				loss_values.append(loss)
 				print "epoch={0} loss={1}".format(epoch,loss)
@@ -73,23 +81,21 @@ class RNN(object):
 			#	self.learning_rate *= learning_rate_decay 
 
 
-				
-	
-	def predict_sequence(self,teX,teY,predictfn):
+	def predict_output(self,teX,predictfn):
 		prediction = self.predict(teX)
-		shape = prediction.shape
-		prediction = prediction.reshape(shape[0]*shape[1],shape[2])
-		prediction = predictfn(prediction)
-		prediction = prediction.reshape(shape[0],shape[1])
+		if prediction.ndim > 2:
+			# prediction dim = T x N x D
+			# Sequence prediction
+			prediction = prediction.reshape(shape[0]*shape[1],shape[2])
+			prediction = predictfn(prediction)
+			prediction = prediction.reshape(shape[0],shape[1])
+			# Output dim = T x N
+		else:
+			# prediction dim = N x D
+			# Single prediction at the end of sequence
+			prediction = predictfn(prediction)
+			# Output dim = N
 		return prediction
-		# dim = T x N
-	
-	def predict_last(self,teX,teY,predictfn):
-		prediction = self.predict(teX)
-		prediction = prediction[-1]
-		prediction = predictfn(prediction)
-		return prediction
-		# dim = N
 
 	def predict_language_model(self,teX,seq_length,predictfn,Temperature=0.7):
 		# Currently only supported with language modeling
