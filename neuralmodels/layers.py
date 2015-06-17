@@ -50,7 +50,7 @@ class softmax(object):
 
 
 class simpleRNN(object):
-	def __init__(self,activation_str='tanh',init='orthogonal',truncate_gradient=50,size=128,weights=None):
+	def __init__(self,activation_str='tanh',init='orthogonal',truncate_gradient=50,size=128,weights=None,seq_output=True):
 		self.settings = locals()
 		del self.settings['self']
 		self.activation = getattr(activations,activation_str)
@@ -58,6 +58,7 @@ class simpleRNN(object):
 		self.size = size
 		self.init = getattr(inits,init)
 		self.weights = weights
+		self.seq_output = seq_output
 
 	def connect(self,layer_below):
 		self.layer_below = layer_below
@@ -86,11 +87,15 @@ class simpleRNN(object):
 					n_steps=X.shape[0],
 					truncate_gradient=self.truncate_gradient
 				)
+		if self.seq_output:
+			return forward_pass
+			# dim = T x N x self.size 
+		else:
+			return forward_pass[-1]
+			# dim = N x self.size 
 
-		return forward_pass
-		# dim = T x N x self.size 
 class LSTM(object):
-	def __init__(self,activation_str='tanh',activation_gate='sigmoid',init='orthogonal',truncate_gradient=50,size=128,weights=None):
+	def __init__(self,activation_str='tanh',activation_gate='sigmoid',init='orthogonal',truncate_gradient=50,size=128,weights=None,seq_output=True):
 		self.settings = locals()
 		del self.settings['self']
 		self.activation = getattr(activations,activation_str)
@@ -99,6 +104,7 @@ class LSTM(object):
 		self.init = getattr(inits,init)
 		self.size = size
 		self.weights = weights
+		self.seq_output = seq_output
 
 	def connect(self,layer_below):
 		self.layer_below = layer_below
@@ -150,8 +156,13 @@ class LSTM(object):
 					n_steps=X.shape[0],
 					truncate_gradient=self.truncate_gradient
 				)
-		return out
-		
+		if self.seq_output:
+			return out
+			# dim = T x N x self.size 
+		else:
+			return out[-1]
+			# dim = N x self.size 
+	
 class OneHot(object):
 	def __init__(self,size,weights=None):
 		self.settings = locals()
