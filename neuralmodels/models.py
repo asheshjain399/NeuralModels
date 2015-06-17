@@ -83,6 +83,7 @@ class RNN(object):
 
 	def predict_output(self,teX,predictfn):
 		prediction = self.predict(teX)
+		shape = prediction.shape
 		if prediction.ndim > 2:
 			# prediction dim = T x N x D
 			# Sequence prediction
