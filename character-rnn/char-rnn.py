@@ -44,17 +44,15 @@ if __name__ == '__main__':
 	Y_valid = Y[:,num_train:]
 	
 	# Creating network layers
-	layers = [OneHot(num_classes),LSTM(),LSTM(),LSTM(activation_str='tanh',activation_gate='sigmoid',init='orthogonal',truncate_gradient=50,size=128,weights=None,seq_output=False),softmax(num_classes)]
+	layers = [OneHot(num_classes),LSTM(),LSTM(),LSTM(),softmax(num_classes)]
 
-	#trY = T.lmatrix()
-
-	trY = T.lvector()
+	trY = T.lmatrix()
 
 	# Initializing network
 	rnn = RNN(layers,softmax_loss,trY,1e-3)
 
 	# Fitting model
-	rnn.fitModel(X_tr,Y_tr[-1],1,'checkpoints/',epochs,batch_size,learning_rate_decay,decay_after)
+	rnn.fitModel(X_tr,Y_tr,1,'checkpoints/',epochs,batch_size,learning_rate_decay,decay_after)
 
 	# Printing a generated sentence	
 	out = rnn.predict_language_model(X_valid[:,:1],1000,OutputSampleFromDiscrete)
