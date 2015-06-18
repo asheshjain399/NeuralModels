@@ -4,6 +4,14 @@ import random
 def OutputMaxProb(X):
 	return np.argmax(X,axis=1)
 
+def OutputActionThresh(X,default_action=1,th=0.9):
+	outmax = np.argmax(X,axis=1)
+	outprob = np.max(X,axis=1)
+	for i in range(len(outmax)):
+		if (not outmax[i] == default_action) and outprob[i] < th:
+			outmax[i] = default_action
+	return outmax
+
 def OutputSampleFromDiscrete(X):
 	labels = []
 	cdf = np.zeros((X.shape[0],X.shape[1]))

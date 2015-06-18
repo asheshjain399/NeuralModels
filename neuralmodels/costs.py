@@ -18,7 +18,7 @@ def softmax_decay_loss(p_t,y):
 	shape = p_t.shape
 
 	def recurrence(x_t,t):
-		h_t = T.exp(-t)*x_t
+		h_t = T.exp(-T.log(t))*x_t
 		t_new = t - 1
 		return h_t,t_new
 		
