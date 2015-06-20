@@ -66,3 +66,23 @@ class RMSprop(Update):
             updates.append((p, updated_p))
         return updates
 
+class Adagrad(Update):
+
+    def __init__(self, lr=0.01, epsilon=1e-6, *args, **kwargs):
+        Update.__init__(self, *args, **kwargs)
+        self.__dict__.update(locals())
+
+    def get_updates(self, params, cost):
+        updates = []
+        grads = T.grad(cost, params)
+        grads = clip_norms(grads, self.clipnorm)
+        for p,g in zip(params,grads):
+            g = self.regularizer.gradient_regularize(p, g)
+            acc = theano.shared(p.get_value() * 0.)
+            acc_t = acc + g ** 2
+            updates.append((acc, acc_t))
+
+            p_t = p - (self.lr / T.sqrt(acc_t + self.epsilon)) * g
+            p_t = self.regularizer.weight_regularize(p_t)
+            updates.append((p, p_t))
+        return updates 

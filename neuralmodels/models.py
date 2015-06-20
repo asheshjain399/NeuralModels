@@ -5,10 +5,10 @@ import theano
 import numpy as np
 from theano import tensor as T
 from utils import permute, save
-from updates import RMSprop
+from updates import RMSprop, Adagrad
 
 class RNN(object):
-	def __init__(self,layers,cost,Y,learning_rate):
+	def __init__(self,layers,cost,Y,learning_rate,update_type=RMSprop()):
 		self.settings = locals()
 		del self.settings['self']
 		self.layers = layers
@@ -26,8 +26,8 @@ class RNN(object):
 				self.params.extend(l.params)
 		
 		
-		rmsprop = RMSprop()
-		self.updates = rmsprop.get_updates(self.params,self.cost)
+		#rmsprop = RMSprop()
+		self.updates = update_type.get_updates(self.params,self.cost)
 
 		self.train = theano.function([self.X,self.Y],self.cost,updates=self.updates)
 		self.objective = theano.function([self.X,self.Y],self.cost)

@@ -18,13 +18,13 @@ def softmax_decay_loss(p_t,y):
 	shape = p_t.shape
 
 	def recurrence(x_t,t):
-		h_t = T.exp(-T.log(t))*x_t
+		h_t = T.exp(-t*t)*x_t
 		t_new = t - 1
 		return h_t,t_new
 		
 	[p_t_new, cells], ups = theano.scan(fn=recurrence,
 					sequences=[p_t],
-					outputs_info=[None, p_t.shape[0]],
+					outputs_info=[None, p_t.shape[0]-1],
 					n_steps=p_t.shape[0]
 				)	
 	'''
