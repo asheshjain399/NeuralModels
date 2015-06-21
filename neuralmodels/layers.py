@@ -32,6 +32,8 @@ class softmax(object):
 			for param, weight in zip(self.params,self.weights):
 				param.set_value(np.asarray(weight, dtype=theano.config.floatX))
 		
+		self.L2_sqr = (self.Whv ** 2).sum()
+
 	def output(self,Temperature=1.0):
 		X = self.layer_below.output()
 		is_tensor3 = X.ndim > 2
@@ -68,10 +70,12 @@ class simpleRNN(object):
 		self.buh = zero0s((1,self.size))
 		self.h0 = zero0s((1,self.size))
 		self.params = [self.Wuh, self.Whh, self.buh]
-	
+
 		if self.weights is not None:
 			for param, weight in zip(self.params,self.weights):
 				param.set_value(np.asarray(weight, dtype=theano.config.floatX))
+
+		self.L2_sqr = (self.Wuh ** 2).sum() + (self.Whh ** 2).sum()
 
 	def recurrence(self,x_t,h_tm1):
 		h_t = self.activation(T.dot(x_t, self.Wuh) + T.dot(h_tm1, self.Whh) + T.extra_ops.repeat(self.buh,x_t.shape[0],axis=0))
@@ -137,6 +141,17 @@ class LSTM(object):
 			for param, weight in zip(self.params,self.weights):
 				param.set_value(np.asarray(weight, dtype=theano.config.floatX))
 
+		self.L2_sqr = (
+				(self.W_i ** 2).sum() +
+				(self.W_f ** 2).sum() +
+				(self.W_o ** 2).sum() +
+				(self.W_c ** 2).sum() +
+				(self.U_i ** 2).sum() +
+				(self.U_f ** 2).sum() +
+				(self.U_o ** 2).sum() +
+				(self.U_c ** 2).sum() 
+			)
+
 	def recurrence(self,x_t,h_tm1,c_tm1):
 		i_t = self.activation_gate(T.dot(x_t, self.W_i) + T.dot(h_tm1, self.U_i) + T.extra_ops.repeat(self.b_i,x_t.shape[0],axis=0))
 		f_t = self.activation_gate(T.dot(x_t, self.W_f) + T.dot(h_tm1, self.U_f) + T.extra_ops.repeat(self.b_f,x_t.shape[0],axis=0))
@@ -172,6 +187,7 @@ class OneHot(object):
 		self.inputD=1
 		self.params=[]
 		self.weights=weights
+		self.L2_sqr = theano.shared(value=np.float32(0.0))
 
 	def output(self):
 		return theano_one_hot(self.input.flatten(), self.size).reshape((self.input.shape[0], self.input.shape[1], self.size))
@@ -189,6 +205,7 @@ class DenseInputFeatures(object):
 		self.inputD=size
 		self.params=[]
 		self.weights=weights
+		self.L2_sqr = theano.shared(value=np.float32(0.0))
 	def output(self):
 		return self.input
 
@@ -205,5 +222,6 @@ class TemporalInputFeatures(object):
 		self.inputD=size
 		self.params=[]
 		self.weights=weights
+		self.L2_sqr = theano.shared(value=np.float32(0.0))
 	def output(self):
 		return self.input

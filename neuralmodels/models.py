@@ -12,14 +12,16 @@ class RNN(object):
 		self.settings = locals()
 		del self.settings['self']
 		self.layers = layers
+		self.L2_sqr = theano.shared(value=np.float32(0.0))
 		for i in range(1, len(layers)):
 			layers[i].connect(layers[i-1])
+			self.L2_sqr += layers[i].L2_sqr  
 
 		self.X = layers[0].input
 		self.Y_pr = layers[-1].output()
 		self.Y = Y
 
-		self.cost = cost(self.Y_pr,self.Y)
+		self.cost = 0.0001*self.L2_sqr + cost(self.Y_pr,self.Y)
 	        self.params = []
 		for l in self.layers:
 	                if hasattr(l,'params'):
