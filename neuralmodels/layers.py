@@ -52,7 +52,7 @@ class softmax(object):
 
 
 class simpleRNN(object):
-	def __init__(self,activation_str='tanh',init='orthogonal',truncate_gradient=50,size=128,weights=None,seq_output=True):
+	def __init__(self,activation_str='tanh',init='orthogonal',truncate_gradient=50,size=128,weights=None,seq_output=True,temporal_connection=True):
 		self.settings = locals()
 		del self.settings['self']
 		self.activation = getattr(activations,activation_str)
@@ -61,6 +61,7 @@ class simpleRNN(object):
 		self.init = getattr(inits,init)
 		self.weights = weights
 		self.seq_output = seq_output
+		self.temporal_connection = temporal_connection
 
 	def connect(self,layer_below):
 		self.layer_below = layer_below
@@ -70,17 +71,27 @@ class simpleRNN(object):
 		self.buh = zero0s((1,self.size))
 		self.h0 = zero0s((1,self.size))
 		self.params = [self.Wuh, self.Whh, self.buh]
+		
+		if not self.temporal_connection:
+			self.params = [self.Wuh, self.buh]
 
 		if self.weights is not None:
 			for param, weight in zip(self.params,self.weights):
 				param.set_value(np.asarray(weight, dtype=theano.config.floatX))
-
+		
 		self.L2_sqr = (self.Wuh ** 2).sum() + (self.Whh ** 2).sum()
 
+		if not self.temporal_connection:
+			self.L2_sqr = (self.Wuh ** 2).sum()
+
 	def recurrence(self,x_t,h_tm1):
-		h_t = self.activation(T.dot(x_t, self.Wuh) + T.dot(h_tm1, self.Whh) + T.extra_ops.repeat(self.buh,x_t.shape[0],axis=0))
-		#h_t = self.activation(x_t+ T.dot(h_tm1, self.Whh))
-		return h_t
+		if self.temporal_connection:
+			h_t = self.activation(T.dot(x_t, self.Wuh) + T.dot(h_tm1, self.Whh) + T.extra_ops.repeat(self.buh,x_t.shape[0],axis=0))
+			return h_t
+		else:
+			h_t = self.activation(T.dot(x_t, self.Wuh) + T.extra_ops.repeat(self.buh,x_t.shape[0],axis=0))
+			return h_t
+
 
 	def output(self):
 		X = self.layer_below.output()
@@ -225,3 +236,37 @@ class TemporalInputFeatures(object):
 		self.L2_sqr = theano.shared(value=np.float32(0.0))
 	def output(self):
 		return self.input
+
+class ConcatenateFeatures(object):
+	def __init__(self,size,weights=None):
+		self.settings = locals()
+		del self.settings['self']
+		self.size = size
+		self.inputD = size 
+		self.params=[]
+		self.input=T.tensor3(dtype=theano.config.floatX)
+		self.weights=weights
+		self.L2_sqr = theano.shared(value=np.float32(0.0))
+
+	def connect(self,layer_below):
+		self.layer_below = layer_below
+		self.size = self.size + self.layer_below.size
+
+	def output(self):
+		return T.concatenate([self.input, self.layer_below.output()], axis=2)
+
+class ConcatenateVectors(object):
+	def __init__(self,weights=None):
+		self.settings = locals()
+		del self.settings['self']
+		self.params=[]
+		self.weights=weights
+		self.L2_sqr = theano.shared(value=np.float32(0.0))
+
+	def connect(self,layer_below_1,layer_below_2):
+		self.layer_below_1 = layer_below_1
+		self.layer_below_2 = layer_below_2
+		self.size = self.layer_below_1.size + self.layer_below_2.size
+
+	def output(self):
+		return T.concatenate([self.layer_below_1.output(), self.layer_below_2.output()], axis=2)
