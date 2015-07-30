@@ -263,10 +263,15 @@ class ConcatenateVectors(object):
 		self.weights=weights
 		self.L2_sqr = theano.shared(value=np.float32(0.0))
 
-	def connect(self,layer_below_1,layer_below_2):
-		self.layer_below_1 = layer_below_1
-		self.layer_below_2 = layer_below_2
-		self.size = self.layer_below_1.size + self.layer_below_2.size
+	def connect(self,layers_below):
+		self.size = 0
+		self.layers_below = layers_below
+		for layer in self.layers_below:
+			self.size += layer[-1].size
 
 	def output(self):
-		return T.concatenate([self.layer_below_1.output(), self.layer_below_2.output()], axis=2)
+		concatenate_output = []
+		for layer in self.layers_below:
+			concatenate_output.append(layer[-1].output())
+		return T.concatenate(concatenate_output,axis=2)
+		#return T.concatenate([self.layer_below_1.output(), self.layer_below_2.output()], axis=2)

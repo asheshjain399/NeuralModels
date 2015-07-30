@@ -4,7 +4,7 @@ import random
 def OutputMaxProb(X):
 	return np.argmax(X,axis=1)
 
-def OutputActionThresh(X,default_action=1,th=0.68):
+def OutputActionThresh(X,default_action=1,th=0.88):
 	outmax = np.argmax(X,axis=1)
 	outprob = np.max(X,axis=1)
 	for i in range(len(outmax)):
