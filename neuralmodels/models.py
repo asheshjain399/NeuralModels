@@ -27,8 +27,15 @@ class RNN(object):
 		for l in self.layers:
 	                if hasattr(l,'params'):
 				self.params.extend(l.params)
-		
-		
+
+		self.num_params = 0
+		for par in self.params:
+			val = par.get_value()
+			temp = 1
+			for i in range(val.ndim):
+				temp *= val.shape[i]		
+			self.num_params += temp
+			
 		#rmsprop = RMSprop()
 		self.updates = update_type.get_updates(self.params,self.cost)
 
@@ -160,6 +167,13 @@ class MultipleRNNsCombined(object):
 			if hasattr(l,'params'):
 				self.params.extend(l.params)
 
+		self.num_params = 0
+		for par in self.params:
+			val = par.get_value()
+			temp = 1
+			for i in range(val.ndim):
+				temp *= val.shape[i]		
+			self.num_params += temp
 		
 		#rmsprop = RMSprop()
 		self.updates = update_type.get_updates(self.params,self.cost)
