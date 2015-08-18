@@ -65,6 +65,7 @@ class SharedRNN(object):
 		self.predict_layer_2 = theano.function([self.X,self.X_2],self.layer_2[-1].output())
 
 	def fitModel(self,trX_shared_1,trX_1,trY_1,trX_shared_2,trX_2,trY_2,snapshot_rate=1,path=None,epochs=30,batch_size=50,learning_rate_decay=0.97,decay_after=10):
+		from neuralmodels.loadcheckpoint import *
 		X_shared_1_minibatch=[]
 		X_1_minibatch=[]
 		Y_1_minibatch=[]

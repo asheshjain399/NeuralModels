@@ -36,6 +36,7 @@ class RNN(object):
 		self.predict = theano.function([self.X],self.layers[-1].output())
 	
 	def fitModel(self,trX,trY,snapshot_rate=1,path=None,epochs=30,batch_size=50,learning_rate_decay=0.97,decay_after=10):
+		from neuralmodels.loadcheckpoint import *
 		X_minibatch=[]
 		Y_minibatch=[]
 		num_examples = trX.shape[1]
