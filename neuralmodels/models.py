@@ -4,9 +4,10 @@ import time
 import theano
 import numpy as np
 from theano import tensor as T
-from utils import permute, save, saveSharedRNN, saveSharedRNNVectors, saveSharedRNNOutput, saveMultipleRNNsCombined
+from utils import permute
+from loadcheckpoint import save, saveSharedRNN, saveSharedRNNVectors, saveSharedRNNOutput, saveMultipleRNNsCombined
 from updates import RMSprop, Adagrad
-from layers import ConcatenateVectors
+from layers.ConcatenateVectors import ConcatenateVectors
 
 class RNN(object):
 	def __init__(self,layers,cost,Y,learning_rate,update_type=RMSprop()):
