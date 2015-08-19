@@ -30,7 +30,7 @@ class SharedRNN(object):
 		self.Y_1 = Y_1
 		self.Y_2 = Y_2
 
-		self.cost_layer_1 = 0.0000*self.L2_sqr + cost(self.Y_pr_1,self.Y_1) 
+		self.cost_layer_1 = cost(self.Y_pr_1,self.Y_1) 
 		self.cost_layer_2 = cost(self.Y_pr_2,self.Y_2)
 
 	        self.params_shared = []
@@ -65,7 +65,7 @@ class SharedRNN(object):
 		self.predict_layer_2 = theano.function([self.X,self.X_2],self.layer_2[-1].output())
 
 	def fitModel(self,trX_shared_1,trX_1,trY_1,trX_shared_2,trX_2,trY_2,snapshot_rate=1,path=None,epochs=30,batch_size=50,learning_rate_decay=0.97,decay_after=10):
-		from neuralmodels.loadcheckpoint import *
+		from neuralmodels.loadcheckpoint import saveSharedRNN
 		X_shared_1_minibatch=[]
 		X_1_minibatch=[]
 		Y_1_minibatch=[]

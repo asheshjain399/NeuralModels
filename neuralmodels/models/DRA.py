@@ -7,7 +7,7 @@ class DRA(object):
 		
 		nodeToEdgeConnections is a dictionary with keys as nodeRNNs name and value is another dictionary whose keys are edgeRNNs the nodeRNN is connected to and value is a list of size-2 which indicates the features to choose from the unConcatenateLayer 
 
-		nodeLabels is a list of CRF labels
+		nodeLabels is a dictionary with keys as node names and values as Theano matrix
 		'''
 		self.settings = locals()
 		del self.settings['self']
@@ -26,6 +26,8 @@ class DRA(object):
 		self.Y = {}
 		self.params = {}
 		self.updates = {}
+		self.train_node = {}
+		self.predict_node = {}
 		self.masterlayer = {}
 
 
@@ -67,9 +69,12 @@ class DRA(object):
 			self.updates[nm] = update_type.get_updates(self.params[nm],self.cost[nm])
 			self.train_node[nm] = theano.function([self.X[nm],self.Y[nm]],self.cost[nm],updates=self.updates[nm])
 			self.predict_node[nm] = theano.function([self.X[nm]],self.Y_pr[nm])
+		
+		for nm in nodeNames:
+			theano.printing.pydotprint(self.train_node[nm],outfile=nm)
 
 	def fitModel(self,trX,trY,snapshot_rate=1,path=None,epochs=30,batch_size=50,learning_rate_decay=0.97,decay_after=10):
-		from neuralmodels.loadcheckpoint import *
+		from neuralmodels.loadcheckpoint import saveDRA
 		loss_values = []
 		nodeNames = trX.keys()
 		for epoch in range(epochs):
@@ -81,6 +86,7 @@ class DRA(object):
 				total_loss += loss[nm]
 			
 			loss_values.append(total_loss)
+			print loss
 			print 'epoch={0} loss={1}'.format(epoch,total_loss)	
 
 			if path and epoch % snapshot_rate == 0:
