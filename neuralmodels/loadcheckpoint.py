@@ -36,6 +36,24 @@ def load(path):
 	model = model_class(**model['config'])
 	return model
 
+def loadDRA(path):
+	model = cPickle.load(open(path))
+	model_class = eval(model['model'])  #getattr(models, model['model'])
+
+	edgeRNNs = {}
+	for k in model['config']['edgeRNNs'].keys():
+		layerlist = model['config']['edgeRNNs'][k]
+		edgeRNNs[k] = [eval(layer['layer'])(**layer['config']) for layer in layerlist]
+	model['config']['edgeRNNs'] = edgeRNNs
+
+	nodeRNNs = {}
+	for k in model['config']['nodeRNNs'].keys():
+		layerlist = model['config']['nodeRNNs'][k]
+		nodeRNNs[k] = [eval(layer['layer'])(**layer['config']) for layer in layerlist]
+	model['config']['nodeRNNs'] = nodeRNNs
+	model = model_class(**model['config'])
+	return model
+	
 def loadSharedRNNVectors(path):
 	model = cPickle.load(open(path))
 	model_class = eval(model['model']) #getattr(models, model['model'])
@@ -91,6 +109,37 @@ def saveSharedRNN(model, path):
 	sys.setrecursionlimit(10000)
 	layer_args = ['shared_layers','layer_1','layer_2']
 	model = CreateSaveableModel(model,layer_args)
+	serializable_model = {'model':model.__class__.__name__, 'config':model.settings}
+	cPickle.dump(serializable_model, open(path, 'wb'))
+
+def saveDRA(model,path):
+	sys.setrecursionlimit(10000)
+
+	edgeRNNs = getattr(model,'edgeRNNs')
+	edgeRNN_saver = {}
+	for k in edgeRNNs.keys():
+		layer_configs = []
+		for layer in edgeRNNs[k]:
+			layer_config = layer.settings
+			layer_name = layer.__class__.__name__
+			weights = [p.get_value() for p in layer.params]
+			layer_config['weights'] = weights
+			layer_configs.append({'layer':layer_name, 'config':layer_config})
+		edgeRNN_saver[k] = layer_configs
+	model.settings['edgeRNNs'] = edgeRNN_saver
+
+	nodeRNNs = getattr(model,'nodeRNNs')
+	nodeRNN_saver = {}
+	for k in nodeRNNs.keys():
+		layer_configs = []
+		for layer in nodeRNNs[k]:
+			layer_config = layer.settings
+			layer_name = layer.__class__.__name__
+			weights = [p.get_value() for p in layer.params]
+			layer_config['weights'] = weights
+			layer_configs.append({'layer':layer_name, 'config':layer_config})
+		nodeRNN_saver[k] = layer_configs
+	model.settings['nodeRNNs'] = nodeRNN_saver
 	serializable_model = {'model':model.__class__.__name__, 'config':model.settings}
 	cPickle.dump(serializable_model, open(path, 'wb'))
 
