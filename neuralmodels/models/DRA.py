@@ -2,6 +2,13 @@ from headers import *
 
 class DRA(object):
 	def __init__(self,edgeRNNs,nodeRNNs,nodeToEdgeConnections,cost,nodeLabels,learning_rate,update_type=RMSprop()):
+		'''
+		edgeRNNs and nodeRNNs are dictionary with keys as RNN name and value is a list of layers
+		
+		nodeToEdgeConnections is a dictionary with keys as nodeRNNs name and value is another dictionary whose keys are edgeRNNs the nodeRNN is connected to and value is a list of size-2 which indicates the features to choose from the unConcatenateLayer 
+
+		nodeLabels is a list of CRF labels
+		'''
 		self.settings = locals()
 		del self.settings['self']
 		
@@ -29,7 +36,7 @@ class DRA(object):
 
 		for nm in nodeNames:
 			self.params[nm] = []
-			self.masterlayer[nm] = masterLayer(nodeToEdgeConnections[nm])
+			self.masterlayer[nm] = unConcatenateVectors(nodeToEdgeConnections[nm])
 			self.X[nm] = self.masterlayer[nm].input
 
 			nodeLayers = self.nodeRNNs[nm]
@@ -61,8 +68,24 @@ class DRA(object):
 			self.train_node[nm] = theano.function([self.X[nm],self.Y[nm]],self.cost[nm],updates=self.updates[nm])
 			self.predict_node[nm] = theano.function([self.X[nm]],self.Y_pr[nm])
 
-		'''
-		self.predict_layer_1 = theano.function([self.X,self.X_1],self.layer_1[-1].output())
-		self.predict_layer_2 = theano.function([self.X,self.X_2],self.layer_2[-1].output())
-		'''
+	def fitModel(self,trX,trY,snapshot_rate=1,path=None,epochs=30,batch_size=50,learning_rate_decay=0.97,decay_after=10):
+		from neuralmodels.loadcheckpoint import *
+		loss_values = []
+		nodeNames = trX.keys()
+		for epoch in range(epochs):
+			t0 = time.time()
+			loss = {}
+			total_loss = 0.0
+			for nm in nodeNames:
+				loss[nm] = self.train_node[nm](trX[nm],trY[nm])
+				total_loss += loss[nm]
+			
+			loss_values.append(total_loss)
+			print 'epoch={0} loss={1}'.format(epoch,total_loss)	
 
+			if path and epoch % snapshot_rate == 0:
+				print 'saving snapshot checkpoint.{0}'.format(epoch)
+				saveDRA(self,"{0}checkpoint.{1}".format(path,epoch))
+		
+			t1 = time.time()
+			print 'Epoch took {0} seconds'.format(t1-t0)
