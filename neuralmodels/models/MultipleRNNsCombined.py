@@ -60,7 +60,7 @@ class MultipleRNNsCombined(object):
 		self.predict = theano.function([self.X[0],self.X[1]],self.combined_layer[-1].output())
 
 	def fitModel(self,trX,trY,snapshot_rate=1,path=None,epochs=30,batch_size=50,learning_rate_decay=0.97,decay_after=10):
-		from neuralmodels.loadcheckpoint import *
+		from neuralmodels.loadcheckpoint import saveMultipleRNNsCombined
 		X = []
 		Y = []
 		num_examples = trX[0].shape[1]
