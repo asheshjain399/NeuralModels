@@ -70,8 +70,6 @@ class DRA(object):
 			self.train_node[nm] = theano.function([self.X[nm],self.Y[nm]],self.cost[nm],updates=self.updates[nm])
 			self.predict_node[nm] = theano.function([self.X[nm]],self.Y_pr[nm])
 		
-		for nm in nodeNames:
-			theano.printing.pydotprint(self.train_node[nm],outfile=nm)
 
 	def fitModel(self,trX,trY,snapshot_rate=1,path=None,epochs=30,batch_size=50,learning_rate_decay=0.97,decay_after=10):
 		from neuralmodels.loadcheckpoint import saveDRA
