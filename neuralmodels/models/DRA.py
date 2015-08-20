@@ -80,6 +80,7 @@ class DRA(object):
 			loss = {}
 			total_loss = 0.0
 			for nm in nodeNames:
+				print trX[nm].shape
 				loss[nm] = self.train_node[nm](trX[nm],trY[nm])
 				total_loss += loss[nm]
 			

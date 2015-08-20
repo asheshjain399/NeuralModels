@@ -8,6 +8,9 @@ import theano.tensor as T
 def uniform(shape, scale=0.05):
 	return theano.shared(value=np.random.uniform(low=-scale,high=scale,size=shape).astype(theano.config.floatX))
 
+def allones(shape, scale=0.05):
+	return theano.shared(value=np.ones(shape).astype(theano.config.floatX))
+
 def normal(shape, scale=0.05):
 	return theano.shared(value=(np.random.randn(*shape) * scale).astype(theano.config.floatX))
 

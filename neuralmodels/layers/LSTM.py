@@ -1,7 +1,7 @@
 from headers import *
 
 class LSTM(object):
-	def __init__(self,activation_str='tanh',activation_gate='sigmoid',init='orthogonal',truncate_gradient=50,size=128,weights=None,seq_output=True):
+	def __init__(self,activation_str='tanh',activation_gate='sigmoid',init='allones',truncate_gradient=50,size=128,weights=None,seq_output=True):
 		self.settings = locals()
 		del self.settings['self']
 		self.activation = getattr(activations,activation_str)

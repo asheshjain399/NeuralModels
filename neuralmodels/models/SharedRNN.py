@@ -125,6 +125,8 @@ class SharedRNN(object):
 				Y_1_minibatch = trY_1
 				Y_2_minibatch = trY_2
 
+				print X_shared_1_minibatch.shape
+				print X_1_minibatch.shape
 
 				loss_layer_1 = self.train_layer_1(X_shared_1_minibatch,X_1_minibatch,Y_1_minibatch)
 				loss_layer_2 = 0.0 #self.train_layer_2(X_shared_2_minibatch,X_2_minibatch,Y_2_minibatch)
