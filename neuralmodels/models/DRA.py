@@ -85,7 +85,6 @@ class DRA(object):
 				total_loss += loss[nm]
 			
 			loss_values.append(total_loss)
-			print loss
 			print 'epoch={0} loss={1}'.format(epoch,total_loss)	
 
 			if path and epoch % snapshot_rate == 0:
