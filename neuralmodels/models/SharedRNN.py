@@ -129,7 +129,7 @@ class SharedRNN(object):
 				print X_1_minibatch.shape
 
 				loss_layer_1 = self.train_layer_1(X_shared_1_minibatch,X_1_minibatch,Y_1_minibatch)
-				loss_layer_2 = 0.0 #self.train_layer_2(X_shared_2_minibatch,X_2_minibatch,Y_2_minibatch)
+				loss_layer_2 = self.train_layer_2(X_shared_2_minibatch,X_2_minibatch,Y_2_minibatch)
 				total_loss = loss_layer_1 + loss_layer_2
 				loss_values.append(total_loss)
 				print "epoch={0} loss_1={1} loss_2={2} total={3}".format(epoch,loss_layer_1,loss_layer_2,total_loss)
