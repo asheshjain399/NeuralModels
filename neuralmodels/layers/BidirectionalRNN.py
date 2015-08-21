@@ -1,7 +1,7 @@
 from headers import *
 
 class BidirectionalRNN(object):
-	def __init__(self,activation_str='tanh',init='orthogonal',truncate_gradient=50,size=128,weights=None,seq_output=True):
+	def __init__(self,activation_str='tanh',init='orthogonal',truncate_gradient=50,size=128,weights=None,seq_output=True,rng=None):
 		self.settings = locals()
 		del self.settings['self']
 		self.activation = getattr(activations,activation_str)
@@ -11,16 +11,17 @@ class BidirectionalRNN(object):
 		self.init = getattr(inits,init)
 		self.weights = weights
 		self.seq_output = seq_output
+		self.rng = rng
 
 	def connect(self,layer_below):
 		self.layer_below = layer_below
 		self.inputD = layer_below.size
-		self.Wuh = self.init((self.inputD,self.size_hidden))
-		self.Whh = self.init((self.size_hidden,self.size_hidden))
+		self.Wuh = self.init((self.inputD,self.size_hidden),rng=self.rng)
+		self.Whh = self.init((self.size_hidden,self.size_hidden),rng=self.rng)
 		self.buh = zero0s((1,self.size_hidden))
 		self.h0 = zero0s((1,self.size_hidden))
-		self.Wuh_b = self.init((self.inputD,self.size_hidden))
-		self.Whh_b = self.init((self.size_hidden,self.size_hidden))
+		self.Wuh_b = self.init((self.inputD,self.size_hidden),rng=self.rng)
+		self.Whh_b = self.init((self.size_hidden,self.size_hidden),rng=self.rng)
 		self.buh_b = zero0s((1,self.size_hidden))
 		self.h0_b = zero0s((1,self.size_hidden))
 		self.params = [self.Wuh, self.Whh, self.buh, self.Wuh_b, self.Whh_b, self.buh_b]

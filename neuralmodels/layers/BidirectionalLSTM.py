@@ -1,7 +1,7 @@
 from headers import *
 
 class BidirectionalLSTM(object):
-	def __init__(self,activation_str='tanh',activation_gate='sigmoid',init='orthogonal',truncate_gradient=50,size=128,weights=None,seq_output=True):
+	def __init__(self,activation_str='tanh',activation_gate='sigmoid',init='orthogonal',truncate_gradient=50,size=128,weights=None,seq_output=True,rng=None):
 		self.settings = locals()
 		del self.settings['self']
 		self.activation = getattr(activations,activation_str)
@@ -12,20 +12,21 @@ class BidirectionalLSTM(object):
 		self.size_hidden = size
 		self.weights = weights
 		self.seq_output = seq_output
+		self.rng = rng
 
 	def connect(self,layer_below):
 		self.layer_below = layer_below
 		self.inputD = layer_below.size
 
-		self.W_i = self.init((self.inputD,self.size))
-		self.W_f = self.init((self.inputD,self.size))
-		self.W_o = self.init((self.inputD,self.size))
-		self.W_c = self.init((self.inputD,self.size))
+		self.W_i = self.init((self.inputD,self.size),rng=self.rng)
+		self.W_f = self.init((self.inputD,self.size),rng=self.rng)
+		self.W_o = self.init((self.inputD,self.size),rng=self.rng)
+		self.W_c = self.init((self.inputD,self.size),rng=self.rng)
 
-		self.U_i = self.init((self.size,self.size))
-		self.U_f = self.init((self.size,self.size))
-		self.U_o = self.init((self.size,self.size))
-		self.U_c = self.init((self.size,self.size))
+		self.U_i = self.init((self.size,self.size),rng=self.rng)
+		self.U_f = self.init((self.size,self.size),rng=self.rng)
+		self.U_o = self.init((self.size,self.size),rng=self.rng)
+		self.U_c = self.init((self.size,self.size),rng=self.rng)
 
 		self.b_i = zero0s((1,self.size)) 
 		self.b_f = zero0s((1,self.size))
@@ -35,15 +36,15 @@ class BidirectionalLSTM(object):
 		self.h0 = zero0s((1,self.size))
 		self.c0 = zero0s((1,self.size))
 
-		self.W_i_b = self.init((self.inputD,self.size_hidden))
-		self.W_f_b = self.init((self.inputD,self.size_hidden))
-		self.W_o_b = self.init((self.inputD,self.size_hidden))
-		self.W_c_b = self.init((self.inputD,self.size_hidden))
+		self.W_i_b = self.init((self.inputD,self.size_hidden),rng=self.rng)
+		self.W_f_b = self.init((self.inputD,self.size_hidden),rng=self.rng)
+		self.W_o_b = self.init((self.inputD,self.size_hidden),rng=self.rng)
+		self.W_c_b = self.init((self.inputD,self.size_hidden),rng=self.rng)
 
-		self.U_i_b = self.init((self.size_hidden,self.size_hidden))
-		self.U_f_b = self.init((self.size_hidden,self.size_hidden))
-		self.U_o_b = self.init((self.size_hidden,self.size_hidden))
-		self.U_c_b = self.init((self.size_hidden,self.size_hidden))
+		self.U_i_b = self.init((self.size_hidden,self.size_hidden),rng=self.rng)
+		self.U_f_b = self.init((self.size_hidden,self.size_hidden),rng=self.rng)
+		self.U_o_b = self.init((self.size_hidden,self.size_hidden),rng=self.rng)
+		self.U_c_b = self.init((self.size_hidden,self.size_hidden),rng=self.rng)
 
 		self.b_i_b = zero0s((1,self.size_hidden)) 
 		self.b_f_b = zero0s((1,self.size_hidden))

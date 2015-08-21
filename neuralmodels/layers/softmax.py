@@ -1,17 +1,18 @@
 from headers import *
 
 class softmax(object):
-	def __init__(self,nclass,init='uniform',weights=None):
+	def __init__(self,nclass,init='uniform',weights=None,rng=None):
 		self.settings = locals()
 		del self.settings['self']
 		self.size = nclass
 		self.init = getattr(inits,init)
 		self.weights = weights
+		self.rng = rng
 	
 	def connect(self,layer_below):
 		self.layer_below = layer_below
 		self.inputD = layer_below.size
-		self.Whv = self.init((self.inputD,self.size))
+		self.Whv = self.init((self.inputD,self.size),rng=self.rng)
 		self.bhv = zero0s((1,self.size))
 		self.params = [self.bhv, self.Whv]
 

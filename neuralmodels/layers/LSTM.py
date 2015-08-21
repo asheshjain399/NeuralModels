@@ -1,7 +1,7 @@
 from headers import *
 
 class LSTM(object):
-	def __init__(self,activation_str='tanh',activation_gate='sigmoid',init='uniform',truncate_gradient=50,size=128,weights=None,seq_output=True):
+	def __init__(self,activation_str='tanh',activation_gate='sigmoid',init='uniform',truncate_gradient=50,size=128,weights=None,seq_output=True,rng=None):
 		self.settings = locals()
 		del self.settings['self']
 		self.activation = getattr(activations,activation_str)
@@ -11,20 +11,21 @@ class LSTM(object):
 		self.size = size
 		self.weights = weights
 		self.seq_output = seq_output
+		self.rng = rng
 
 	def connect(self,layer_below):
 		self.layer_below = layer_below
 		self.inputD = layer_below.size
 
-		self.W_i = self.init((self.inputD,self.size))
-		self.W_f = self.init((self.inputD,self.size))
-		self.W_o = self.init((self.inputD,self.size))
-		self.W_c = self.init((self.inputD,self.size))
+		self.W_i = self.init((self.inputD,self.size),rng=self.rng)
+		self.W_f = self.init((self.inputD,self.size),rng=self.rng)
+		self.W_o = self.init((self.inputD,self.size),rng=self.rng)
+		self.W_c = self.init((self.inputD,self.size),rng=self.rng)
 
-		self.U_i = self.init((self.size,self.size))
-		self.U_f = self.init((self.size,self.size))
-		self.U_o = self.init((self.size,self.size))
-		self.U_c = self.init((self.size,self.size))
+		self.U_i = self.init((self.size,self.size),rng=self.rng)
+		self.U_f = self.init((self.size,self.size),rng=self.rng)
+		self.U_o = self.init((self.size,self.size),rng=self.rng)
+		self.U_c = self.init((self.size,self.size),rng=self.rng)
 
 		self.b_i = zero0s((1,self.size)) 
 		self.b_f = zero0s((1,self.size))
