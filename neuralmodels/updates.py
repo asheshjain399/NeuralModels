@@ -5,6 +5,16 @@ import numpy as np
 
 
 def clip_norm(g, c, n):
+    # c can either be a float value of a theano variable. 
+    '''
+    isTheanoVariable = hasattr(c,'ndim')
+        
+    if isTheanoVariable:
+        if T.gt(c , 0):
+            g = T.switch(T.ge(n, c), g*c/n, g)
+        return g
+    else:
+    '''
     if c > 0:
         g = T.switch(T.ge(n, c), g*c/n, g)
     return g

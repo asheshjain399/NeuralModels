@@ -1,7 +1,7 @@
 from headers import *
 
 class DRA(object):
-	def __init__(self,edgeRNNs,nodeRNNs,nodeToEdgeConnections,cost,nodeLabels,learning_rate,update_type=RMSprop()):
+	def __init__(self,edgeRNNs,nodeRNNs,nodeToEdgeConnections,cost,nodeLabels,learning_rate,clipnorm=0.0,update_type=RMSprop()):
 		'''
 		edgeRNNs and nodeRNNs are dictionary with keys as RNN name and value is a list of layers
 		
@@ -16,7 +16,10 @@ class DRA(object):
 		self.nodeRNNs = nodeRNNs
 		self.nodeToEdgeConnections = nodeToEdgeConnections
 		self.nodeLabels = nodeLabels
-		
+		self.update_type = update_type		
+		self.learning_rate = learning_rate
+		self.clipnorm = clipnorm
+
 		nodeNames = nodeRNNs.keys()
 		edgeNames = edgeRNNs.keys()
 
@@ -30,6 +33,8 @@ class DRA(object):
 		self.predict_node = {}
 		self.masterlayer = {}
 
+		self.update_type.lr = self.learning_rate
+		self.update_type.clipnorm = self.clipnorm
 
 		for em in edgeNames:
 			layers = self.edgeRNNs[em]
@@ -66,26 +71,30 @@ class DRA(object):
 			self.Y_pr[nm] = nodeLayers[-1].output()
 			self.Y[nm] = self.nodeLabels[nm]
 			self.cost[nm] = cost(self.Y_pr[nm],self.Y[nm])
-			self.updates[nm] = update_type.get_updates(self.params[nm],self.cost[nm])
-			self.train_node[nm] = theano.function([self.X[nm],self.Y[nm]],self.cost[nm],updates=self.updates[nm])
+			self.updates[nm] = self.update_type.get_updates(self.params[nm],self.cost[nm])
+			self.train_node[nm] = theano.function([self.X[nm],self.Y[nm],self.learning_rate],self.cost[nm],updates=self.updates[nm])
 			self.predict_node[nm] = theano.function([self.X[nm]],self.Y_pr[nm])
 		
 
-	def fitModel(self,trX,trY,snapshot_rate=1,path=None,epochs=30,batch_size=50,learning_rate_decay=0.97,decay_after=10):
+	def fitModel(self,trX,trY,snapshot_rate=1,path=None,epochs=30,batch_size=50,learning_rate=1e-3,learning_rate_decay=0.97,decay_after=-1):
 		from neuralmodels.loadcheckpoint import saveDRA
-		loss_values = []
+		loss_after_each_minibatch = []
 		nodeNames = trX.keys()
 		for epoch in range(epochs):
 			t0 = time.time()
-			loss = {}
-			total_loss = 0.0
+	
+			# If you want to do minibatch then enter your code here
+			loss_node = {}
+			loss = 0.0
 			for nm in nodeNames:
-				print trX[nm].shape
-				loss[nm] = self.train_node[nm](trX[nm],trY[nm])
-				total_loss += loss[nm]
-			
-			loss_values.append(total_loss)
-			print 'epoch={0} loss={1}'.format(epoch,total_loss)	
+				loss_node[nm] = self.train_node[nm](trX[nm],trY[nm],learning_rate)
+				loss += loss_node[nm]
+			loss_after_each_minibatch.append(loss)
+			print 'loss={0}'.format(loss)
+			# End minibatch code here
+
+			if decay_after > 0 and epoch > decay_after:
+				learning_rate *= learning_rate_decay
 
 			if path and epoch % snapshot_rate == 0:
 				print 'saving snapshot checkpoint.{0}'.format(epoch)
