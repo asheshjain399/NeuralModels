@@ -36,10 +36,14 @@ class DRA(object):
 		self.update_type.lr = self.learning_rate
 		self.update_type.clipnorm = self.clipnorm
 
+		self.std = T.scalar(dtype=theano.config.floatX)
+
 		for em in edgeNames:
 			layers = self.edgeRNNs[em]
 			for i in range(1,len(layers)):
 				layers[i].connect(layers[i-1])
+				if layers[i].__class__.__name__ == 'AddNoiseToInput':
+					layers[i].std = self.std
 
 		for nm in nodeNames:
 			self.params[nm] = []
@@ -72,11 +76,11 @@ class DRA(object):
 			self.Y[nm] = self.nodeLabels[nm]
 			self.cost[nm] = cost(self.Y_pr[nm],self.Y[nm])
 			self.updates[nm] = self.update_type.get_updates(self.params[nm],self.cost[nm])
-			self.train_node[nm] = theano.function([self.X[nm],self.Y[nm],self.learning_rate],self.cost[nm],updates=self.updates[nm])
-			self.predict_node[nm] = theano.function([self.X[nm]],self.Y_pr[nm])
+			self.train_node[nm] = theano.function([self.X[nm],self.Y[nm],self.learning_rate,self.std],self.cost[nm],updates=self.updates[nm],on_unused_input='warn')
+			self.predict_node[nm] = theano.function([self.X[nm],self.std],self.Y_pr[nm],on_unused_input='warn')
 		
 
-	def fitModel(self,trX,trY,snapshot_rate=1,path=None,epochs=30,batch_size=50,learning_rate=1e-3,learning_rate_decay=0.97,decay_after=-1):
+	def fitModel(self,trX,trY,snapshot_rate=1,path=None,epochs=30,batch_size=50,learning_rate=1e-3,learning_rate_decay=0.97,std=1e-5,decay_after=-1):
 		from neuralmodels.loadcheckpoint import saveDRA
 		loss_after_each_minibatch = []
 		nodeNames = trX.keys()
@@ -87,7 +91,7 @@ class DRA(object):
 			loss_node = {}
 			loss = 0.0
 			for nm in nodeNames:
-				loss_node[nm] = self.train_node[nm](trX[nm],trY[nm],learning_rate)
+				loss_node[nm] = self.train_node[nm](trX[nm],trY[nm],learning_rate,std)
 				loss += loss_node[nm]
 			loss_after_each_minibatch.append(loss)
 			print 'loss={0}'.format(loss)

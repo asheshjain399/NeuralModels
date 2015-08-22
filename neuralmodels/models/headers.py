@@ -8,3 +8,4 @@ from neuralmodels.utils import permute
 from neuralmodels.updates import RMSprop, Adagrad
 from neuralmodels.layers.ConcatenateVectors import ConcatenateVectors
 from neuralmodels.layers.unConcatenateVectors import unConcatenateVectors
+from neuralmodels.layers.AddNoiseToInput import AddNoiseToInput

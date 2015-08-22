@@ -2,6 +2,11 @@ import theano
 from theano import tensor as T
 import numpy as np
 
+def euclidean_loss(y_t,y):
+	y = y.flatten()
+	y_t = y_t.flatten()
+	return T.mean(T.sqr(y-y_t))
+
 def softmax_loss(p_t,y):
 	shape = p_t.shape
 	is_tensor3 = p_t.ndim > 2

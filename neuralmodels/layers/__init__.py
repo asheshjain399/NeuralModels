@@ -7,3 +7,4 @@ from OneHot import OneHot
 from simpleRNN import simpleRNN
 from softmax import softmax
 from TemporalInputFeatures import TemporalInputFeatures
+from AddNoiseToInput import AddNoiseToInput
