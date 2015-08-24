@@ -1,4 +1,5 @@
 import pdb
+import copy
 import time
 import theano
 import numpy as np
