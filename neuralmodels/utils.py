@@ -17,4 +17,11 @@ def permute(samples):
 		x = x[np.random.permutation(samples)]
 	return x
 
-
+def readCSVasFloat(filename):
+	returnArray = []
+	lines = open(filename).readlines()
+	for line in lines:
+		line = line.strip().split(',')
+		if len(line) > 0:
+			returnArray.append(np.array([float(x) for x in line]))
+	return np.array(returnArray)
