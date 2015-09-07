@@ -3,9 +3,13 @@ from theano import tensor as T
 import numpy as np
 
 def euclidean_loss(y_t,y):
+	scaling = 1
+	if y.ndim > 2:
+		scaling = y.shape[0]*y.shape[2] # = T*D
 	y = y.flatten()
 	y_t = y_t.flatten()
-	return T.mean(T.sqr(y-y_t))
+
+	return scaling * T.mean(T.sqr(y-y_t))
 
 def softmax_loss(p_t,y):
 	shape = p_t.shape

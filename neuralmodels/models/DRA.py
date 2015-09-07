@@ -80,7 +80,7 @@ class DRA(object):
 			self.predict_node[nt] = theano.function([self.X[nt],self.std],self.Y_pr[nt],on_unused_input='warn')
 		
 
-	def fitModel(self,trX,trY,snapshot_rate=1,path=None,epochs=30,batch_size=50,learning_rate=1e-3,learning_rate_decay=0.97,std=1e-5,decay_after=-1,trX_validation=None,trY_validation=None,evaluateMode=None):
+	def fitModel(self,trX,trY,snapshot_rate=1,path=None,epochs=30,batch_size=50,learning_rate=1e-3,learning_rate_decay=0.97,std=1e-5,decay_after=-1,trX_validation=None,trY_validation=None,evaluateModel=None,rng=np.random.RandomState(1234567890)):
 		from neuralmodels.loadcheckpoint import saveDRA
 		
 		tr_X = {}
@@ -113,16 +113,27 @@ class DRA(object):
 		batches_in_one_epoch = 1
 		for nm in nodeNames:
 			N = trX[nm].shape[1]
-			batches_in_one_epoch = int(np.ceil(N / batch_size))
+			batches_in_one_epoch = int(np.ceil(N*1.0 / batch_size))
 			break
 
 		print "batches in each epoch ",batches_in_one_epoch
-
+		numrange = np.arange(Nmax)
 		loss_after_each_minibatch = []
 		for epoch in range(epochs):
 			t0 = time.time()
+
+			'''Permuting before mini-batch iteration'''
+			if not unequalSize:
+				shuffle_list = rng.permutation(numrange)
+				for nm in nodeNames:
+					trX[nm] = trX[nm][:,shuffle_list,:]
+					if outputDim == 2:
+						trY[nm] = trY[nm][:,shuffle_list]
+					elif outputDim == 3:
+						trY[nm] = trY[nm][:,shuffle_list,:]
+
 			for j in range(batches_in_one_epoch):
-				
+	
 				for nm in nodeNames:
 					nt = nm.split(':')[1]
 					if(len(tr_X[nt])) == 0:
@@ -142,7 +153,7 @@ class DRA(object):
 				for nt in nodeTypes:
 					loss += self.train_node[nt](tr_X[nt],tr_Y[nt],learning_rate,std)
 				loss_after_each_minibatch.append(loss)
-				print 'loss={0}'.format(loss)
+				print 'e={1} m={2} loss={0}'.format(loss,epoch,j)
 				
 				del tr_X
 				del tr_Y
@@ -152,14 +163,21 @@ class DRA(object):
 				for nt in nodeTypes:
 					tr_X[nt] = []
 					tr_Y[nt] = []
-		
+			
+			'''Learning rate decay'''	
 			if decay_after > 0 and epoch > decay_after:
 				learning_rate *= learning_rate_decay
 
+			'''Saving the learned model so far'''
 			if path and epoch % snapshot_rate == 0:
 				print 'saving snapshot checkpoint.{0}'.format(epoch)
 				saveDRA(self,"{0}checkpoint.{1}".format(path,epoch))
-			
+				f = open('{0}logfile'.format(path),'w')
+				for v in loss_after_each_minibatch:
+					f.write('{0}\n'.format(v))
+				f.close()
+		
+			'''Computing error on validation set'''
 			if (trX_validation is not None) and (trY_validation is not None) and (evaluateModel is not None):
 				predict = self.predict_sequence(trX_validation)
 				validation_error = evaluateModel(predict)
@@ -167,32 +185,6 @@ class DRA(object):
 			t1 = time.time()
 			print 'Epoch took {0} seconds'.format(t1-t0)
 
-		'''
-		loss_after_each_minibatch = []
-		nodeNames = trX.keys()
-		for epoch in range(epochs):
-			t0 = time.time()
-	
-			# If you want to do minibatch then enter your code here
-			loss_node = {}
-			loss = 0.0
-			for nm in nodeNames:
-				loss_node[nm] = self.train_node[nm](trX[nm],trY[nm],learning_rate,std)
-				loss += loss_node[nm]
-			loss_after_each_minibatch.append(loss)
-			print 'loss={0}'.format(loss)
-			# End minibatch code here
-
-			if decay_after > 0 and epoch > decay_after:
-				learning_rate *= learning_rate_decay
-
-			if path and epoch % snapshot_rate == 0:
-				print 'saving snapshot checkpoint.{0}'.format(epoch)
-				saveDRA(self,"{0}checkpoint.{1}".format(path,epoch))
-		
-			t1 = time.time()
-			print 'Epoch took {0} seconds'.format(t1-t0)
-		'''		
 
 		def predict_output(self,teX):
 			nodeNames = teX.keys()

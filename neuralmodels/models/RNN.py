@@ -1,7 +1,7 @@
 from headers import *
 
 class RNN(object):
-	def __init__(self,layers,cost,Y,learning_rate,update_type=RMSprop()):
+	def __init__(self,layers,cost,Y,learning_rate,update_type=RMSprop(),clipnorm=0.0):
 		self.settings = locals()
 		del self.settings['self']
 		self.layers = layers

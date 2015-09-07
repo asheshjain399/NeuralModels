@@ -96,3 +96,51 @@ class Adagrad(Update):
             p_t = self.regularizer.weight_regularize(p_t)
             updates.append((p, p_t))
         return updates 
+
+class Momentum(Update):
+
+    def __init__(self, lr=0.01, momentum=0.9, *args, **kwargs):
+    	Update.__init__(self, *args, **kwargs)
+	self.__dict__.update(locals())
+
+    def get_updates(self, params, cost):
+    	updates = []
+	grads = T.grad(cost, params)
+	grads = clip_norms(grads, self.clipnorm)
+	for p,g in zip(params,grads):
+	    g = self.regularizer.gradient_regularize(p, g)
+	    m = theano.shared(p.get_value() * 0.)
+	    v = (self.momentum * m) - (self.lr * g)
+	    updates.append((m, v))
+
+	    updated_p = p + v
+	    updated_p = self.regularizer.weight_regularize(updated_p)
+	    updates.append((p, updated_p))
+	return updates
+
+class Adadelta(Update):
+
+    def __init__(self, lr=0.5, rho=0.95, epsilon=1e-6, *args, **kwargs):
+        Update.__init__(self, *args, **kwargs)
+	self.__dict__.update(locals())
+    def get_updates(self, params, cost):
+        updates = []
+	grads = T.grad(cost, params)
+	grads = clip_norms(grads, self.clipnorm)
+	for p,g in zip(params,grads):
+	    g = self.regularizer.gradient_regularize(p, g)
+            
+	    acc = theano.shared(p.get_value() * 0.)
+            acc_delta = theano.shared(p.get_value() * 0.)
+            acc_new = self.rho * acc + (1 - self.rho) * g ** 2
+            updates.append((acc,acc_new))
+            
+	    update = g * T.sqrt(acc_delta + self.epsilon) / T.sqrt(acc_new + self.epsilon)
+            updated_p = p - self.lr * update
+            updated_p = self.regularizer.weight_regularize(updated_p)
+            updates.append((p, updated_p))
+            
+	    acc_delta_new = self.rho * acc_delta + (1 - self.rho) * update ** 2
+            updates.append((acc_delta,acc_delta_new))
+
+        return updates

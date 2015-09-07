@@ -19,5 +19,5 @@ class AddNoiseToInput(object):
 	
 	def output(self):
 		X = self.layer_below.output()
-		out = T.switch(T.le(self.std,theano.shared(value=0.0)),X,(X + self.theano_rng.normal(size=X.shape,std=self.std)))
+		out = T.switch(T.le(self.std,theano.shared(value=0.0)),X,(X + self.theano_rng.normal(size=X.shape,std=self.std,dtype=theano.config.floatX)))
 		return out
