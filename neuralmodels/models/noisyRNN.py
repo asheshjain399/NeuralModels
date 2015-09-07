@@ -99,7 +99,7 @@ class noisyRNN(object):
 			'''Trajectory forecasting'''
 			if (trX_forecasting is not None) and (trY_forecasting is not None) and path:
 				forecasted_motion = self.predict_sequence(trX_forecasting,sequence_length=trY_forecasting.shape[0])
-				self.saveForecastedMotion(forecasted_motion,path)
+				self.saveForecastedMotion(forecasted_motion,path,epoch)
 
 			'''Learning rate decay'''	
 			if decay_after > 0 and epoch > decay_after:
@@ -123,13 +123,13 @@ class noisyRNN(object):
 			t1 = time.time()
 			print 'Epoch took {0} seconds'.format(t1-t0)
 
-	def saveForecastedMotion(forecast,path):
+	def saveForecastedMotion(self,forecast,path,epoch):
 		T = forecast.shape[0]
 		N = forecast.shape[1]
 		D = forecast.shape[2]
 		for j in range(N):
 			motion = forecast[:,j,:]
-			f = open('{0}forecast.{1}'.format(path,j),'w')
+			f = open('{0}forecast_epoch_{2}_N_{1}'.format(path,j,epoch),'w')
 			for i in range(T):
 				st = ''
 				for k in range(D):

@@ -17,6 +17,20 @@ def permute(samples):
 		x = x[np.random.permutation(samples)]
 	return x
 
+def writeMatToCSV(mat,filename):
+	f = open(filename,'w')
+	N = mat.shape[0]
+	D = mat.shape[1]
+	
+	for i in range(N):
+		st = ''
+		for j in range(D):
+			st += str(mat[i,j]) + ','
+		st = st[:-1]
+		f.write(st+'\n')
+	
+	f.close()
+
 def readCSVasFloat(filename):
 	returnArray = []
 	lines = open(filename).readlines()
