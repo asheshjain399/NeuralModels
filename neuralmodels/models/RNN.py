@@ -29,7 +29,7 @@ class RNN(object):
 			self.num_params += temp
 			
 		#rmsprop = RMSprop()
-		self.updates = update_type.get_updates(self.params,self.cost)
+		[self.updates,self.grads] = update_type.get_updates(self.params,self.cost)
 
 		self.train = theano.function([self.X,self.Y],self.cost,updates=self.updates)
 		self.objective = theano.function([self.X,self.Y],self.cost)

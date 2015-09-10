@@ -116,7 +116,7 @@ class Momentum(Update):
 	    updated_p = p + v
 	    updated_p = self.regularizer.weight_regularize(updated_p)
 	    updates.append((p, updated_p))
-	return updates,grads_unclipped
+	return updates,grads
 
 class Adadelta(Update):
 

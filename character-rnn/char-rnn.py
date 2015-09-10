@@ -2,11 +2,12 @@ import numpy as np
 import theano
 from theano import tensor as T
 from generateTrainDataonText import createTrain
-from neuralmodels.utils import permute, load
+from neuralmodels.utils import permute
+from neuralmodels.loadcheckpoint import *
 from neuralmodels.costs import softmax_loss
-from neuralmodels.models import RNN
+from neuralmodels.models import *
 from neuralmodels.predictions import OutputMaxProb, OutputSampleFromDiscrete
-from neuralmodels.layers import softmax, simpleRNN, OneHot, LSTM
+from neuralmodels.layers import *
 
 def text_prediction(class_ids_reverse,p_labels):
 	N = p_labels.shape[1]
