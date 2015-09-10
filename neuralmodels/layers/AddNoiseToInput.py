@@ -1,13 +1,15 @@
 from headers import *
 
 class AddNoiseToInput(object):
-	def __init__(self,weights=None,rng=None):
+	def __init__(self,weights=None,rng=None,skip_input=False,jump_up=False):
 		self.settings = locals()
 		del self.settings['self']
 		self.rng = rng
 		self.weights = weights
 		self.params = []
 		self.std=T.scalar(dtype=theano.config.floatX)
+		self.skip_input = skip_input
+		self.jump_up = jump_up
 		if rng is None:
 			self.rng = np.random
 		self.theano_rng = T.shared_randomstreams.RandomStreams(self.rng.randint(2 ** 30))

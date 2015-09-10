@@ -1,7 +1,7 @@
 from headers import *
 
 class LSTM(object):
-	def __init__(self,activation_str='tanh',activation_gate='sigmoid',init='uniform',truncate_gradient=50,size=128,weights=None,seq_output=True,rng=None):
+	def __init__(self,activation_str='tanh',activation_gate='sigmoid',init='uniform',truncate_gradient=50,size=128,weights=None,seq_output=True,rng=None,skip_input=False,jump_up=False):
 		self.settings = locals()
 		del self.settings['self']
 		self.activation = getattr(activations,activation_str)
@@ -12,10 +12,15 @@ class LSTM(object):
 		self.weights = weights
 		self.seq_output = seq_output
 		self.rng = rng
+		self.skip_input = skip_input
+		self.jump_up = jump_up
 
-	def connect(self,layer_below):
+	def connect(self,layer_below,skip_layer=None):
 		self.layer_below = layer_below
+		self.skip_layer=skip_layer
 		self.inputD = layer_below.size
+		if self.skip_layer:
+			self.inputD += skip_layer.size
 
 		self.W_i = self.init((self.inputD,self.size),rng=self.rng)
 		self.W_f = self.init((self.inputD,self.size),rng=self.rng)
@@ -67,7 +72,11 @@ class LSTM(object):
 		return h_t,c_t
 
 	def output(self):
-		X = self.layer_below.output()
+		X = []
+		if self.skip_layer:
+			X = T.concatenate([self.layer_below.output(),self.skip_layer.output()],axis=2)
+		else:
+			X = self.layer_below.output() 
 		[out, cells], ups = theano.scan(fn=self.recurrence,
 					sequences=[X],
 					outputs_info=[T.extra_ops.repeat(self.h0,X.shape[1],axis=0), T.extra_ops.repeat(self.c0,X.shape[1],axis=0)],

@@ -3,6 +3,7 @@ from ConcatenateFeatures import ConcatenateFeatures
 from ConcatenateVectors import ConcatenateVectors
 from DenseInputFeatures import DenseInputFeatures
 from LSTM import LSTM 
+from multilayerLSTM import multilayerLSTM 
 from OneHot import OneHot
 from simpleRNN import simpleRNN
 from softmax import softmax

@@ -10,11 +10,14 @@ import sys
 from neuralmodels.layers import *
 from neuralmodels.models import *
 
+'''
 def loadLayers(model,layers_to_load):
 	for layer_name in layers_to_load:
 		model['config'][layer_name] = [eval(layer['layer'])(**layer['config']) for layer in model['config'][layer_name]]
 	return model
+'''
 
+'''
 def CreateSaveableModel(model,layers_to_save):
 	for layerName in layers_to_save:
 		layer_configs = []
@@ -27,6 +30,36 @@ def CreateSaveableModel(model,layers_to_save):
 		model.settings[layerName] = layer_configs
 	
 	return model
+'''
+
+def loadLayers(model,layers_to_load):
+	for layer_name in layers_to_load:
+		layers_init = []
+		for layer in model['config'][layer_name]:
+
+			if 'nested_layers' in layer['config'].keys():
+				if layer['config']['nested_layers']:
+					layer = loadLayers(layer,['layers'])
+
+			layers_init.append(eval(layer['layer'])(**layer['config']))
+		model['config'][layer_name] = layers_init 
+	return model
+
+def CreateSaveableModel(model,layers_to_save):
+	for layerName in layers_to_save:
+		layer_configs = []
+		for layer in getattr(model,layerName):
+			if hasattr(layer,'nested_layers'):
+				if layer.nested_layers:
+					layer = CreateSaveableModel(layer,['layers'])
+			layer_config = layer.settings
+			layer_name = layer.__class__.__name__
+			weights = [p.get_value() for p in layer.params]
+			layer_config['weights'] = weights
+			layer_configs.append({'layer':layer_name, 'config':layer_config})
+		model.settings[layerName] = layer_configs
+	return model
+
 
 def load(path):
 	model = cPickle.load(open(path))

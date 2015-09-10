@@ -63,8 +63,8 @@ class RMSprop(Update):
 
     def get_updates(self, params, cost):
         updates = []
-        grads = T.grad(cost, params)
-        grads = clip_norms(grads, self.clipnorm)
+        grads_unclipped = T.grad(cost, params)
+        grads = clip_norms(grads_unclipped, self.clipnorm)
         for p,g in zip(params,grads):
             g = self.regularizer.gradient_regularize(p, g)
             acc = theano.shared(p.get_value() * 0.)
@@ -74,7 +74,7 @@ class RMSprop(Update):
             updated_p = p - self.lr * (g / T.sqrt(acc_new + self.epsilon))
             updated_p = self.regularizer.weight_regularize(updated_p)
             updates.append((p, updated_p))
-        return updates
+        return updates,grads_unclipped
 
 class Adagrad(Update):
 
@@ -84,8 +84,8 @@ class Adagrad(Update):
 
     def get_updates(self, params, cost):
         updates = []
-        grads = T.grad(cost, params)
-        grads = clip_norms(grads, self.clipnorm)
+        grads_unclipped = T.grad(cost, params)
+        grads = clip_norms(grads_unclipped, self.clipnorm)
         for p,g in zip(params,grads):
             g = self.regularizer.gradient_regularize(p, g)
             acc = theano.shared(p.get_value() * 0.)
@@ -95,7 +95,7 @@ class Adagrad(Update):
             p_t = p - (self.lr / T.sqrt(acc_t + self.epsilon)) * g
             p_t = self.regularizer.weight_regularize(p_t)
             updates.append((p, p_t))
-        return updates 
+        return updates,grads_unclipped 
 
 class Momentum(Update):
 
@@ -105,8 +105,8 @@ class Momentum(Update):
 
     def get_updates(self, params, cost):
     	updates = []
-	grads = T.grad(cost, params)
-	grads = clip_norms(grads, self.clipnorm)
+	grads_unclipped = T.grad(cost, params)
+	grads = clip_norms(grads_unclipped, self.clipnorm)
 	for p,g in zip(params,grads):
 	    g = self.regularizer.gradient_regularize(p, g)
 	    m = theano.shared(p.get_value() * 0.)
@@ -116,7 +116,7 @@ class Momentum(Update):
 	    updated_p = p + v
 	    updated_p = self.regularizer.weight_regularize(updated_p)
 	    updates.append((p, updated_p))
-	return updates
+	return updates,grads_unclipped
 
 class Adadelta(Update):
 
@@ -125,8 +125,8 @@ class Adadelta(Update):
 	self.__dict__.update(locals())
     def get_updates(self, params, cost):
         updates = []
-	grads = T.grad(cost, params)
-	grads = clip_norms(grads, self.clipnorm)
+	grads_unclipped = T.grad(cost, params)
+	grads = clip_norms(grads_unclipped, self.clipnorm)
 	for p,g in zip(params,grads):
 	    g = self.regularizer.gradient_regularize(p, g)
             
@@ -143,4 +143,4 @@ class Adadelta(Update):
 	    acc_delta_new = self.rho * acc_delta + (1 - self.rho) * update ** 2
             updates.append((acc_delta,acc_delta_new))
 
-        return updates
+        return updates,grads_unclipped

@@ -1,7 +1,7 @@
 from headers import *
 
 class simpleRNN(object):
-	def __init__(self,activation_str='tanh',init='orthogonal',truncate_gradient=50,size=128,weights=None,seq_output=True,temporal_connection=True,rng=None):
+	def __init__(self,activation_str='tanh',init='orthogonal',truncate_gradient=50,size=128,weights=None,seq_output=True,temporal_connection=True,rng=None,skip_input=False,jump_up=False):
 		self.settings = locals()
 		del self.settings['self']
 		self.activation = getattr(activations,activation_str)
@@ -12,6 +12,8 @@ class simpleRNN(object):
 		self.seq_output = seq_output
 		self.temporal_connection = temporal_connection
 		self.rng = rng
+		self.skip_input = skip_input
+		self.jump_up = jump_up
 
 	def connect(self,layer_below):
 		self.layer_below = layer_below
