@@ -32,6 +32,10 @@ class LSTM(object):
 		self.U_o = self.init((self.size,self.size),rng=self.rng)
 		self.U_c = self.init((self.size,self.size),rng=self.rng)
 
+		self.V_i = self.init((self.size,self.size),rng=self.rng)
+		self.V_f = self.init((self.size,self.size),rng=self.rng)
+		self.V_o = self.init((self.size,self.size),rng=self.rng)
+
 		self.b_i = zero0s((1,self.size)) 
 		self.b_f = zero0s((1,self.size))
 		self.b_o = zero0s((1,self.size))
@@ -42,7 +46,8 @@ class LSTM(object):
 
 		self.params = [self.W_i, self.W_f, self.W_o, self.W_c,
 			self.U_i, self.U_f, self.U_o, self.U_c,
-			self.b_i, self.b_f, self.b_o, self.b_c
+			self.b_i, self.b_f, self.b_o, self.b_c,
+			self.V_i, self.V_f, self.V_o
 			]
 
 		if self.weights is not None:
@@ -61,12 +66,11 @@ class LSTM(object):
 			)
 
 	def recurrence(self,x_t,h_tm1,c_tm1):
-		i_t = self.activation_gate(T.dot(x_t, self.W_i) + T.dot(h_tm1, self.U_i) + T.extra_ops.repeat(self.b_i,x_t.shape[0],axis=0))
-		f_t = self.activation_gate(T.dot(x_t, self.W_f) + T.dot(h_tm1, self.U_f) + T.extra_ops.repeat(self.b_f,x_t.shape[0],axis=0))
-		o_t = self.activation_gate(T.dot(x_t, self.W_o) + T.dot(h_tm1, self.U_o) + T.extra_ops.repeat(self.b_o,x_t.shape[0],axis=0))
+		i_t = self.activation_gate(T.dot(x_t, self.W_i) + T.dot(h_tm1, self.U_i) + T.dot(c_tm1, self.V_i) + T.extra_ops.repeat(self.b_i,x_t.shape[0],axis=0))
+		f_t = self.activation_gate(T.dot(x_t, self.W_f) + T.dot(h_tm1, self.U_f) + T.dot(c_tm1, self.V_f) + T.extra_ops.repeat(self.b_f,x_t.shape[0],axis=0))
 		c_tilda_t = self.activation(T.dot(x_t, self.W_c) + T.dot(h_tm1, self.U_c) + T.extra_ops.repeat(self.b_c,x_t.shape[0],axis=0))
-
 		c_t = f_t * c_tm1 + i_t * c_tilda_t
+		o_t = self.activation_gate(T.dot(x_t, self.W_o) + T.dot(h_tm1, self.U_o) + T.dot(c_t, self.V_o) + T.extra_ops.repeat(self.b_o,x_t.shape[0],axis=0))
 		h_t = o_t * self.activation(c_t)
 
 		return h_t,c_t
