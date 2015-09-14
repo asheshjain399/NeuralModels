@@ -9,3 +9,4 @@ from simpleRNN import simpleRNN
 from softmax import softmax
 from TemporalInputFeatures import TemporalInputFeatures
 from AddNoiseToInput import AddNoiseToInput
+from FCLayer import FCLayer

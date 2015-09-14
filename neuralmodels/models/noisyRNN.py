@@ -62,7 +62,7 @@ class noisyRNN(object):
 			self.saveForecastedMotion(training_trajectories,path,fname)
 
 		'''While calculating the loos we ignore these many initial time steps'''
-		delta_t_ignore = 50
+		delta_t_ignore = 0 #50
 	
 		'''If loading an existing model then some of the parameters needs to be restored'''
 		epoch_count = 0
@@ -70,7 +70,7 @@ class noisyRNN(object):
 		loss_after_each_minibatch = []
 		complete_logger = ''
 		if epoch_start is not None:
-			epoch_count = epoch_start
+			epoch_count = epoch_start + 1
 			if path:
 				lines = open('{0}logfile'.format(path)).readlines()
 				for i in range(epoch_count):
@@ -110,16 +110,16 @@ class noisyRNN(object):
 			if decay_type:
 				if decay_type == 'continuous' and decay_after > 0 and epoch > decay_after:
 					learning_rate *= learning_rate_decay
-				elif decay_type == 'schedule':
+				elif decay_type == 'schedule' and decay_schedule is not None:
 					for i in range(len(decay_schedule)):
 						if decay_schedule[i] > 0 and epoch > decay_schedule[i]:
 							learning_rate *= decay_rate_schedule[i]
 							decay_schedule[i] = -1
 
 			'''Set noise level.'''	
-			if use_noise:
+			if use_noise and noise_schedule is not None:
 				for i in range(len(noise_schedule)):
-					if noise_schedule[i] > 0 and epoch > noise_schedule[i]:
+					if noise_schedule[i] > 0 and epoch >= noise_schedule[i]:
 						std = noise_rate_schedule[i]
 						noise_schedule[i] = -1
 
@@ -146,6 +146,7 @@ class noisyRNN(object):
 				validation_set.append(-1)
 
 				termout = 'e={1} m={2} lr={5} g_l2={4} noise={7} loss={0} normalized={3} skel_err={6}'.format(loss,epoch,j,(loss*1.0/(seq_length*feature_dim)),g,learning_rate,np.sqrt(loss*1.0/seq_length),std)
+				#termout = 'e={1} m={2} lr={5} g_l2={4} noise={7} loss={0} normalized={3} skel_err={6}'.format(loss,epoch,j,(loss*1.0/(feature_dim)),g,learning_rate,np.sqrt(loss*1.0),std)
 				complete_logger += termout + '\n'
 				print termout
 
@@ -159,14 +160,21 @@ class noisyRNN(object):
 
 
 			'''Trajectory forecasting on validation set'''
-			if (trX_forecasting is not None) and (trY_forecasting is not None) and path and epoch % snapshot_rate == 0:
+			if (trX_forecasting is not None) and (trY_forecasting is not None) and path and epoch % 2 == 0:
 				forecasted_motion = self.predict_sequence(trX_forecasting,sequence_length=trY_forecasting.shape[0])
 				fname = 'forecast_epoch_{0}'.format(epoch)
 				self.saveForecastedMotion(forecasted_motion,path,fname)
 
+				skel_err = np.mean(np.sqrt(np.sum(np.square((forecasted_motion - trY_forecasting)),axis=2)),axis=1)
+				err_per_dof = skel_err / trY_forecasting.shape[2]
+				fname = 'forecast_error_epoch_{0}'.format(epoch)
+				self.saveForecastError(skel_err,err_per_dof,path,fname)
+
+
 
 			'''Saving the learned model so far'''
 			if path:
+				print 'Dir: ',path
 				if epoch % snapshot_rate == 0:
 					print 'saving snapshot checkpoint.{0}'.format(epoch)
 					save(self,"{0}checkpoint.{1}".format(path,epoch))
@@ -192,6 +200,12 @@ class noisyRNN(object):
 			termout = 'Epoch took {0} seconds'.format(t1-t0)
 			complete_logger += termout + '\n'
 			print termout
+
+	def saveForecastError(self,skel_err,err_per_dof,path,fname):
+		f = open('{0}{1}'.format(path,fname),'w')
+		for i in range(skel_err.shape[0]):
+			f.write('T={0} {1}, {2}\n'.format(i,skel_err[i],err_per_dof[i]))
+		f.close()
 
 	def saveForecastedMotion(self,forecast,path,fname):
 		T = forecast.shape[0]

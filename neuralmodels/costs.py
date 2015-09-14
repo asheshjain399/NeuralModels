@@ -3,10 +3,11 @@ from theano import tensor as T
 import numpy as np
 
 def euclidean_loss(y_t,y):
-	delta_t_ignore = 50
+	delta_t_ignore = 0 #50
 	scaling = 1
 	if y.ndim > 2:
 		scaling = (y.shape[0]-delta_t_ignore)*y.shape[2] # = T*D
+		#scaling = y.shape[2] # = T
 	y_new = y[delta_t_ignore:,:,:].flatten()
 	y_t_new = y_t[delta_t_ignore:,:,:].flatten()
 
