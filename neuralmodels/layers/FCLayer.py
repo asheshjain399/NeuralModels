@@ -23,6 +23,6 @@ class FCLayer(object):
 		
 		self.L2_sqr = (self.W ** 2).sum() 
 
-	def output(self):
-		X = self.layer_below.output()
+	def output(self,seq_output=True):
+		X = self.layer_below.output(seq_output=seq_output)
 		return self.activation(T.dot(X, self.W) + self.b)

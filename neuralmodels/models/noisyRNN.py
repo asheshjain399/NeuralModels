@@ -49,9 +49,9 @@ class noisyRNN(object):
 
 	def fitModel(self,trX,trY,snapshot_rate=1,path=None,epochs=30,batch_size=50,learning_rate=1e-3,
 		learning_rate_decay=0.97,std=1e-5,decay_after=-1,trX_validation=None,trY_validation=None,
-		trX_forecasting=None,trY_forecasting=None,rng=np.random.RandomState(1234567890),epoch_start=None,
+		trX_forecasting=None,trY_forecasting=None,rng=np.random.RandomState(1234567890),iter_start=None,
 		decay_type=None,decay_schedule=None,decay_rate_schedule=None,
-		use_noise=False,noise_schedule=None,noise_rate_schedule=None):
+		use_noise=False,noise_schedule=None,noise_rate_schedule=None,maxiter=10000):
 
 		from neuralmodels.loadcheckpoint import save
 
@@ -69,11 +69,11 @@ class noisyRNN(object):
 		validation_set = []
 		loss_after_each_minibatch = []
 		complete_logger = ''
-		if epoch_start is not None:
-			epoch_count = epoch_start + 1
+		iterations = 0
+		if iter_start > 0:
 			if path:
 				lines = open('{0}logfile'.format(path)).readlines()
-				for i in range(epoch_count):
+				for i in range(iter_start):
 					line = lines[i]
 					values = line.strip().split(',')
 					print values
@@ -83,9 +83,10 @@ class noisyRNN(object):
 					elif len(values) == 2:
 						loss_after_each_minibatch.append(float(values[0]))
 						validation_set.append(float(values[1]))
-				if os.path.exists('{0}complete_log'.format(path)):
-					complete_logger = open('{0}complete_log'.format(path)).read()
-					complete_logger = complete_logger[:epoch_count]
+				#if os.path.exists('{0}complete_log'.format(path)):
+				#	complete_logger = open('{0}complete_log'.format(path)).read()
+				#	complete_logger = complete_logger[:epoch_count]
+			iterations = iter_start + 1
 
 		N = trX.shape[1]
 		outputDim = trY.ndim
@@ -95,15 +96,18 @@ class noisyRNN(object):
 		numrange = np.arange(N)
 		X = []
 		Y = []
-
+		
+		#iterations = epoch_count * batches_in_one_epoch * 1.0
+	
 		Tvalidation = 0
 		Dvalidation = 0
 		if (trX_validation is not None):
 			Tvalidation = trX_validation.shape[0] - delta_t_ignore
 			Dvalidation = trX_validation.shape[2]
-
+		epoch = 0
 		print 'batches in one epoch ',batches_in_one_epoch
-		for epoch in range(epoch_count,epochs):
+		#for epoch in range(epoch_count,epochs):
+		while iterations <= maxiter:
 			t0 = time.time()
 
 			'''Learning rate decay.'''	
@@ -112,14 +116,14 @@ class noisyRNN(object):
 					learning_rate *= learning_rate_decay
 				elif decay_type == 'schedule' and decay_schedule is not None:
 					for i in range(len(decay_schedule)):
-						if decay_schedule[i] > 0 and epoch > decay_schedule[i]:
+						if decay_schedule[i] > 0 and iterations > decay_schedule[i]:
 							learning_rate *= decay_rate_schedule[i]
 							decay_schedule[i] = -1
 
 			'''Set noise level.'''	
 			if use_noise and noise_schedule is not None:
 				for i in range(len(noise_schedule)):
-					if noise_schedule[i] > 0 and epoch >= noise_schedule[i]:
+					if noise_schedule[i] > 0 and iterations >= noise_schedule[i]:
 						std = noise_rate_schedule[i]
 						noise_schedule[i] = -1
 
@@ -144,62 +148,59 @@ class noisyRNN(object):
 				g = self.grad_norm(X,Y,std)
 				loss_after_each_minibatch.append(loss)
 				validation_set.append(-1)
+				iterations += 1
 
-				termout = 'e={1} m={2} lr={5} g_l2={4} noise={7} loss={0} normalized={3} skel_err={6}'.format(loss,epoch,j,(loss*1.0/(seq_length*feature_dim)),g,learning_rate,np.sqrt(loss*1.0/seq_length),std)
+				termout = 'e={1} iter={8} m={2} lr={5} g_l2={4} noise={7} loss={0} normalized={3} skel_err={6}'.format(loss,epoch,j,(loss*1.0/(seq_length*feature_dim)),g,learning_rate,np.sqrt(loss*1.0/seq_length),std,iterations)
 				#termout = 'e={1} m={2} lr={5} g_l2={4} noise={7} loss={0} normalized={3} skel_err={6}'.format(loss,epoch,j,(loss*1.0/(feature_dim)),g,learning_rate,np.sqrt(loss*1.0),std)
 				complete_logger += termout + '\n'
 				print termout
+		
+				'''Trajectory forecasting on validation set'''
+				if (trX_forecasting is not None) and (trY_forecasting is not None) and path and int(iterations) % snapshot_rate == 0:
+					forecasted_motion = self.predict_sequence(trX_forecasting,sequence_length=trY_forecasting.shape[0])
+					fname = 'forecast_iteration_{0}'.format(iterations)
+					self.saveForecastedMotion(forecasted_motion,path,fname)
+
+					skel_err = np.mean(np.sqrt(np.sum(np.square((forecasted_motion - trY_forecasting)),axis=2)),axis=1)
+					err_per_dof = skel_err / trY_forecasting.shape[2]
+					fname = 'forecast_error_iteration_{0}'.format(iterations)
+					self.saveForecastError(skel_err,err_per_dof,path,fname)
+
+				'''Saving the learned model so far'''
+				if path and int(iterations) % snapshot_rate == 0:
+					print 'saving snapshot checkpoint.{0}'.format(iterations)
+					save(self,"{0}checkpoint.{1}".format(path,iterations))
 
 			'''Computing error on validation set'''
 			if (trX_validation is not None) and (trY_validation is not None):
-				validation_error = self.prediction_loss(trX_validation,trY_validation,1e-5)
+				validation_error = self.prediction_loss(trX_validation,trY_validation,std)
 				validation_set[-1] = validation_error
 				termout = 'Validation: loss={0} normalized={1} skel_err={2}'.format(validation_error,(validation_error*1.0/(Tvalidation*Dvalidation)),np.sqrt(validation_error*1.0/Tvalidation))
 				complete_logger += termout + '\n'
 				print termout
 
-
-			'''Trajectory forecasting on validation set'''
-			if (trX_forecasting is not None) and (trY_forecasting is not None) and path and epoch % 2 == 0:
-				forecasted_motion = self.predict_sequence(trX_forecasting,sequence_length=trY_forecasting.shape[0])
-				fname = 'forecast_epoch_{0}'.format(epoch)
-				self.saveForecastedMotion(forecasted_motion,path,fname)
-
-				skel_err = np.mean(np.sqrt(np.sum(np.square((forecasted_motion - trY_forecasting)),axis=2)),axis=1)
-				err_per_dof = skel_err / trY_forecasting.shape[2]
-				fname = 'forecast_error_epoch_{0}'.format(epoch)
-				self.saveForecastError(skel_err,err_per_dof,path,fname)
-
-
-
-			'''Saving the learned model so far'''
 			if path:
 				print 'Dir: ',path
-				if epoch % snapshot_rate == 0:
-					print 'saving snapshot checkpoint.{0}'.format(epoch)
-					save(self,"{0}checkpoint.{1}".format(path,epoch))
 
 				'''Writing training error and validation error in a log file'''
 				f = open('{0}logfile'.format(path),'w')
 				for l,v in zip(loss_after_each_minibatch,validation_set):
-					if v > 0:
-						f.write('{0},{1}\n'.format(l,v))
-					else:
-						f.write('{0}\n'.format(l))
+					f.write('{0},{1}\n'.format(l,v))
 				f.close()
 				f = open('{0}complete_log'.format(path),'w')
 				f.write(complete_logger)
 				f.close()
 
 				'''Get error on training trajectories'''
-				training_prediction = self.predict(training_trajectories,1e-5)
-				fname = 'train_error_epoch_{0}'.format(epoch)
-				self.saveForecastedMotion(training_prediction,path,fname)
+				#training_prediction = self.predict(training_trajectories,1e-5)
+				#fname = 'train_error_epoch_{0}'.format(epoch)
+				#self.saveForecastedMotion(training_prediction,path,fname)
 
 			t1 = time.time()
 			termout = 'Epoch took {0} seconds'.format(t1-t0)
 			complete_logger += termout + '\n'
 			print termout
+			epoch += 1
 
 	def saveForecastError(self,skel_err,err_per_dof,path,fname):
 		f = open('{0}{1}'.format(path,fname),'w')
@@ -223,13 +224,15 @@ class noisyRNN(object):
 			f.close()
 		
 	'''Predicts future movements'''	
-	def predict_sequence(self,teX,sequence_length=100):
+	def predict_sequence(self,teX_original,sequence_length=100):
+		teX = copy.deepcopy(teX_original)
 		future_sequence = []
 		for i in range(sequence_length):
 			prediction = self.predict(teX,1e-5)
 			prediction = prediction[-1]
 			teX = np.append(teX,[prediction],axis=0)
 			future_sequence.append(prediction)
+		del teX
 		return np.array(future_sequence)
 
 	def predict_output(self,teX,predictfn):

@@ -19,12 +19,12 @@ class ConcatenateVectors(object):
 		for layer in self.layers_below:
 			self.size += layer[-1].size
 
-	def output(self):
+	def output(self,seq_output=True):
 		concatenate_output = []
 		is_tensor3 = False
 
 		for layer in self.layers_below:
-			concatenate_output.append(layer[-1].output())
+			concatenate_output.append(layer[-1].output(seq_output=seq_output))
 			if (layer[-1].output()).ndim > 2:
 				is_tensor3 = True
 

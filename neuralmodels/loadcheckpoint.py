@@ -76,13 +76,25 @@ def loadDRA(path):
 	edgeRNNs = {}
 	for k in model['config']['edgeRNNs'].keys():
 		layerlist = model['config']['edgeRNNs'][k]
-		edgeRNNs[k] = [eval(layer['layer'])(**layer['config']) for layer in layerlist]
+		edgeRNNs[k] = []
+		for layer in layerlist:
+			if 'nested_layers' in layer['config'].keys():
+				if layer['config']['nested_layers']:
+					layer = loadLayers(layer,['layers'])
+			edgeRNNs[k].append(eval(layer['layer'])(**layer['config']))
+		#edgeRNNs[k] = [eval(layer['layer'])(**layer['config']) for layer in layerlist]
 	model['config']['edgeRNNs'] = edgeRNNs
 
 	nodeRNNs = {}
 	for k in model['config']['nodeRNNs'].keys():
 		layerlist = model['config']['nodeRNNs'][k]
-		nodeRNNs[k] = [eval(layer['layer'])(**layer['config']) for layer in layerlist]
+		nodeRNNs[k] = []
+		for layer in layerlist:
+			if 'nested_layers' in layer['config'].keys():
+				if layer['config']['nested_layers']:
+					layer = loadLayers(layer,['layers'])
+			nodeRNNs[k].append(eval(layer['layer'])(**layer['config']))
+		#nodeRNNs[k] = [eval(layer['layer'])(**layer['config']) for layer in layerlist]
 	model['config']['nodeRNNs'] = nodeRNNs
 	model = model_class(**model['config'])
 	return model
@@ -153,6 +165,9 @@ def saveDRA(model,path):
 	for k in edgeRNNs.keys():
 		layer_configs = []
 		for layer in edgeRNNs[k]:
+			if hasattr(layer,'nested_layers'):
+				if layer.nested_layers:
+					layer = CreateSaveableModel(layer,['layers'])
 			layer_config = layer.settings
 			layer_name = layer.__class__.__name__
 			weights = [p.get_value() for p in layer.params]
@@ -166,6 +181,9 @@ def saveDRA(model,path):
 	for k in nodeRNNs.keys():
 		layer_configs = []
 		for layer in nodeRNNs[k]:
+			if hasattr(layer,'nested_layers'):
+				if layer.nested_layers:
+					layer = CreateSaveableModel(layer,['layers'])
 			layer_config = layer.settings
 			layer_name = layer.__class__.__name__
 			weights = [p.get_value() for p in layer.params]

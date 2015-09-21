@@ -47,6 +47,8 @@ class LSTM(object):
 		self.b_o = zero0s((self.size))
 		self.b_c = zero0s((self.size))
 
+		#self.h0 = T.matrix(dtype=theano.config.floatX) #zero0s((1,self.size))
+		#self.c0 = T.matrix(dtype=theano.config.floatX) #zero0s((1,self.size))
 		self.h0 = zero0s((1,self.size))
 		self.c0 = zero0s((1,self.size))
 
@@ -100,7 +102,7 @@ class LSTM(object):
 
 		return h_t,c_t
 
-	def output(self):
+	def output(self,seq_output=True):
 		X = []
 		if self.skip_layer:
 			X = T.concatenate([self.layer_below.output(),self.skip_layer.output()],axis=2)
@@ -115,6 +117,7 @@ class LSTM(object):
 		[out, cells], ups = theano.scan(fn=self.recurrence_efficient,
 				sequences=[X_i,X_f,X_c,X_o],
 				outputs_info=[T.extra_ops.repeat(self.h0,X.shape[1],axis=0), T.extra_ops.repeat(self.c0,X.shape[1],axis=0)],
+				#outputs_info=[self.h0,self.c0],
 				n_steps=X_i.shape[0],
 				truncate_gradient=self.truncate_gradient
 			)
@@ -127,8 +130,8 @@ class LSTM(object):
 					truncate_gradient=self.truncate_gradient
 				)
 		'''
-
-		if self.seq_output:
+		self.cell_output = cells[-1]
+		if seq_output:
 			return out
 			# dim = T x N x self.size 
 		else:

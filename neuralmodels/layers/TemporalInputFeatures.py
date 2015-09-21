@@ -17,6 +17,6 @@ class TemporalInputFeatures(object):
 		self.skip_input = skip_input
 		self.jump_up = jump_up
 
-	def output(self):
+	def output(self,seq_output=True):
 		return self.input
 
