@@ -1,13 +1,14 @@
 from headers import *
 
 class noisyRNN(object):
-	def __init__(self,layers,cost,Y,learning_rate,update_type=RMSprop(),clipnorm=0.0):
+	def __init__(self,layers,cost,Y,learning_rate,update_type=RMSprop(),clipnorm=0.0,weight_decay=0.0):
 		self.settings = locals()
 		del self.settings['self']
 		self.layers = layers
 		self.learning_rate = learning_rate
 		self.clipnorm = clipnorm	
 		self.std = T.scalar(dtype=theano.config.floatX)
+		self.weight_decay = weight_decay
 		
 		self.update_type = update_type
 		self.update_type.lr = self.learning_rate
@@ -22,7 +23,7 @@ class noisyRNN(object):
 		self.Y_pr = layers[-1].output()
 		self.Y = Y
 
-		self.cost =  cost(self.Y_pr,self.Y)
+		self.cost =  cost(self.Y_pr,self.Y) + self.weight_decay * layers[-1].L2_sqr
 	        self.params = []
 		for l in self.layers:
 	                if hasattr(l,'params'):

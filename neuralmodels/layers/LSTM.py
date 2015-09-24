@@ -21,6 +21,7 @@ class LSTM(object):
 		self.g_high = g_high
 		self.grad_clip = grad_clip
 
+
 	def connect(self,layer_below,skip_layer=None):
 		self.layer_below = layer_below
 		self.skip_layer=skip_layer
@@ -47,8 +48,6 @@ class LSTM(object):
 		self.b_o = zero0s((self.size))
 		self.b_c = zero0s((self.size))
 
-		#self.h0 = T.matrix(dtype=theano.config.floatX) #zero0s((1,self.size))
-		#self.c0 = T.matrix(dtype=theano.config.floatX) #zero0s((1,self.size))
 		self.h0 = zero0s((1,self.size))
 		self.c0 = zero0s((1,self.size))
 
@@ -113,11 +112,13 @@ class LSTM(object):
 		X_f = T.dot(X, self.W_f) + self.b_f
 		X_c = T.dot(X, self.W_c) + self.b_c
 		X_o = T.dot(X, self.W_o) + self.b_o
-		 
+		
+		h_init = T.extra_ops.repeat(self.h0,X.shape[1],axis=0)
+		c_init =  T.extra_ops.repeat(self.c0,X.shape[1],axis=0)
 		[out, cells], ups = theano.scan(fn=self.recurrence_efficient,
 				sequences=[X_i,X_f,X_c,X_o],
-				outputs_info=[T.extra_ops.repeat(self.h0,X.shape[1],axis=0), T.extra_ops.repeat(self.c0,X.shape[1],axis=0)],
-				#outputs_info=[self.h0,self.c0],
+				#outputs_info=[T.extra_ops.repeat(self.h0,X.shape[1],axis=0), T.extra_ops.repeat(self.c0,X.shape[1],axis=0)],
+				outputs_info=[h_init,c_init],
 				n_steps=X_i.shape[0],
 				truncate_gradient=self.truncate_gradient
 			)
@@ -130,7 +131,6 @@ class LSTM(object):
 					truncate_gradient=self.truncate_gradient
 				)
 		'''
-		self.cell_output = cells[-1]
 		if seq_output:
 			return out
 			# dim = T x N x self.size 

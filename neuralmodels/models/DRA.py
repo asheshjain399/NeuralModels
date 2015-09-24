@@ -1,7 +1,7 @@
 from headers import *
 
 class DRA(object):
-	def __init__(self,edgeRNNs,nodeRNNs,nodeToEdgeConnections,edgeListComplete,cost,nodeLabels,learning_rate,clipnorm=0.0,update_type=RMSprop()):
+	def __init__(self,edgeRNNs,nodeRNNs,nodeToEdgeConnections,edgeListComplete,cost,nodeLabels,learning_rate,clipnorm=0.0,update_type=RMSprop(),weight_decay=0.0):
 		'''
 		edgeRNNs and nodeRNNs are dictionary with keys as RNN name and value is a list of layers
 		
@@ -19,6 +19,7 @@ class DRA(object):
 		self.nodeLabels = nodeLabels
 		self.learning_rate = learning_rate
 		self.clipnorm = clipnorm
+		self.weight_decay = weight_decay
 		
 		nodeTypes = nodeRNNs.keys()
 		edgeTypes = edgeRNNs.keys()
@@ -87,7 +88,7 @@ class DRA(object):
 			self.Y_pr[nt] = nodeLayers[-1].output()
 			self.Y[nt] = self.nodeLabels[nt]
 			
-			self.cost[nt] = cost(self.Y_pr[nt],self.Y[nt])
+			self.cost[nt] = cost(self.Y_pr[nt],self.Y[nt]) + self.weight_decay * nodeLayers[-1].L2_sqr
 		
 			[self.updates[nt],self.grads[nt]] = self.update_type.get_updates(self.params[nt],self.cost[nt])
 		
