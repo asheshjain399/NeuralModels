@@ -20,6 +20,7 @@ class SharedRNN(object):
 			layer_2[i].connect(layer_2[i-1])
 			self.L2_sqr += layer_2[i].L2_sqr  
 
+		print update_type.lr
 
 
 		self.X = shared_layers[0].input
@@ -53,11 +54,37 @@ class SharedRNN(object):
 		for l in self.shared_layers:
 	                if hasattr(l,'params'):
 				self.params_layer_2.extend(l.params)
-
 		
+		self.num_params = 0
+		for layer in self.layer_2:
+			if hasattr(layer,'params'):
+				for par in layer.params:
+					val = par.get_value()
+					temp = 1
+					for i in range(val.ndim):
+						temp *= val.shape[i]		
+					self.num_params += temp
+		for layer in self.layer_1:
+			if hasattr(layer,'params'):
+				for par in layer.params:
+					val = par.get_value()
+					temp = 1
+					for i in range(val.ndim):
+						temp *= val.shape[i]		
+					self.num_params += temp
+		for layer in self.shared_layers:
+			if hasattr(layer,'params'):
+				for par in layer.params:
+					val = par.get_value()
+					temp = 1
+					for i in range(val.ndim):
+						temp *= val.shape[i]		
+					self.num_params += temp
+
+		print "number of params ",self.num_params
 		#rmsprop = RMSprop()
-		self.updates_layer_1 = update_type.get_updates(self.params_layer_1,self.cost_layer_1)
-		self.updates_layer_2 = update_type.get_updates(self.params_layer_2,self.cost_layer_2)
+		[self.updates_layer_1,grad] = update_type.get_updates(self.params_layer_1,self.cost_layer_1)
+		[self.updates_layer_2,grad] = update_type.get_updates(self.params_layer_2,self.cost_layer_2)
 
 		self.train_layer_1 = theano.function([self.X,self.X_1,self.Y_1],self.cost_layer_1,updates=self.updates_layer_1)
 		self.train_layer_2 = theano.function([self.X,self.X_2,self.Y_2],self.cost_layer_2,updates=self.updates_layer_2)

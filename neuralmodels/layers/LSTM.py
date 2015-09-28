@@ -11,6 +11,7 @@ class LSTM(object):
 		self.activation_gate = getattr(activations,activation_gate)
 		self.truncate_gradient = truncate_gradient
 		self.init = getattr(inits,init)
+		self.uniform = getattr(inits,'uniform')
 		self.size = size
 		self.weights = weights
 		self.seq_output = seq_output
@@ -39,9 +40,9 @@ class LSTM(object):
 		self.U_o = self.init((self.size,self.size),rng=self.rng)
 		self.U_c = self.init((self.size,self.size),rng=self.rng)
 
-		self.V_i = self.init(self.size,rng=self.rng)
-		self.V_f = self.init(self.size,rng=self.rng)
-		self.V_o = self.init(self.size,rng=self.rng)
+		self.V_i = self.uniform(self.size,rng=self.rng)
+		self.V_f = self.uniform(self.size,rng=self.rng)
+		self.V_o = self.uniform(self.size,rng=self.rng)
 
 		self.b_i = zero0s((self.size)) 
 		self.b_f = zero0s((self.size))

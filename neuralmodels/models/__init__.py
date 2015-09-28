@@ -1,5 +1,5 @@
 from DRA import DRA
-from DRAcopyStates import DRAcopyStates
+from DRAanticipation import DRAanticipation
 from MultipleRNNsCombined import MultipleRNNsCombined  
 from RNN import RNN
 from SharedRNNOutput import SharedRNNOutput
