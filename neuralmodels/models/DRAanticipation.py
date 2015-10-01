@@ -97,7 +97,7 @@ class DRAanticipation(object):
 				#self.Y_pr[nt] = nodeLayers[-1].output()
 				self.Y[nt] = self.nodeLabels[nt]
 				
-				self.cost[nt] = cost(self.Y_pr[nt],self.Y[nt]) + self.weight_decay * nodeLayers[-1].L2_sqr
+				self.cost[nt] = cost(self.Y_pr[nt],self.Y[nt]) 
 			
 				[self.updates[nt],self.grads[nt]] = self.update_type.get_updates(self.params[nt],self.cost[nt])
 			
@@ -151,6 +151,15 @@ class DRAanticipation(object):
 						for i in range(val.ndim):
 							temp *= val.shape[i]		
 						self.num_params += temp
+			for layer in self.outputLayer[nt]:
+				if hasattr(layer,'params'):
+					for par in layer.params:
+						val = par.get_value()
+						temp = 1
+						for i in range(val.ndim):
+							temp *= val.shape[i]		
+						self.num_params += temp
+
 		for et in edgeTypes:
 			edgeLayers = self.edgeRNNs[et]
 			for layer in edgeLayers:
@@ -217,9 +226,9 @@ class DRAanticipation(object):
 		for nm in nodeNames:
 			N = trX[nm].shape[1]
 			seq_length = trX[nm].shape[0]
-			outputDim = trY[nm].ndim
+			outputDim = trY[nm]['detection'].ndim
 			if outputDim > 2:
-				skel_dim += trY[nm].shape[2]
+				skel_dim += trY[nm]['detection'].shape[2]
 
 			numExamples[nm] = N
 			if Nmax == 0:
@@ -246,8 +255,14 @@ class DRAanticipation(object):
 		#for epoch in range(epoch_count,epochs):
 		validation_file = None
 		if path is not None:
-			validation_file = open('{0}{1}'.format(path,'validation_acc'),'w')
-			validation_file.close()
+			if train_for == 'joint':
+				validation_file = open('{0}{2}_{1}'.format(path,'joint_validation_acc_detection',train_for),'w')
+				validation_file.close()
+				validation_file = open('{0}{2}_{1}'.format(path,'joint_validation_acc_anticipation',train_for),'w')
+				validation_file.close()
+			else:
+				validation_file = open('{0}{2}_{1}'.format(path,'validation_acc',train_for),'w')
+				validation_file.close()
 
 
 		epoch = 0
