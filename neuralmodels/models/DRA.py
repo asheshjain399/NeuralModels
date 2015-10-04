@@ -128,7 +128,7 @@ class DRA(object):
 
 	def fitModel(self,trX,trY,snapshot_rate=1,path=None,epochs=30,batch_size=50,learning_rate=1e-3,
 		learning_rate_decay=0.97,std=1e-5,decay_after=-1,trX_validation=None,trY_validation=None,
-		trX_forecasting=None,trY_forecasting=None,rng=np.random.RandomState(1234567890),iter_start=None,
+		trX_forecasting=None,trY_forecasting=None,trX_forecast_nodeFeatures=None,rng=np.random.RandomState(1234567890),iter_start=None,
 		decay_type=None,decay_schedule=None,decay_rate_schedule=None,
 		use_noise=False,noise_schedule=None,noise_rate_schedule=None,
 		new_idx=None,featureRange=None,poseDataset=None,graph=None,maxiter=10000):
@@ -231,6 +231,15 @@ class DRA(object):
 						std = noise_rate_schedule[i]
 						noise_schedule[i] = -1
 
+			'''Loading noisy data'''
+			noisy_data = graph.readCRFgraph(poseDataset,noise=std)
+			trX = noisy_data[8]
+			trY = noisy_data[9]
+			trX_validation = noisy_data[10]
+			trY_validation = noisy_data[11]
+
+
+
 			'''Permuting before mini-batch iteration'''
 			if not unequalSize:
 				shuffle_list = rng.permutation(numrange)
@@ -293,7 +302,7 @@ class DRA(object):
 		
 				'''Trajectory forecasting on validation set'''
 				if (trX_forecasting is not None) and (trY_forecasting is not None) and path and (int(iterations) % snapshot_rate == 0):
-					forecasted_motion = self.predict_sequence(trX_forecasting,sequence_length=trY_forecasting.shape[0],poseDataset=poseDataset,graph=graph)
+					forecasted_motion = self.predict_sequence(trX_forecasting,trX_forecast_nodeFeatures,sequence_length=trY_forecasting.shape[0],poseDataset=poseDataset,graph=graph)
 					forecasted_motion = self.convertToSingleVec(forecasted_motion,new_idx,featureRange)
 					fname = 'forecast_iteration_{0}'.format(int(iterations))
 					self.saveForecastedMotion(forecasted_motion,path,fname)
@@ -367,18 +376,21 @@ class DRA(object):
 		return predict
 
 
-	def predict_sequence(self,teX_original,sequence_length=100,poseDataset=None,graph=None):
+	def predict_sequence(self,teX_original,teX_original_nodeFeatures,sequence_length=100,poseDataset=None,graph=None):
 		teX = copy.deepcopy(teX_original)
 		nodeNames = teX.keys()
 
 		teY = {}
 		to_return = {}
 		T = 0
+		nodeFeatures_t_1 = {}
 		for nm in nodeNames:
 			[T,N,D] = teX[nm].shape
 			to_return[nm] = np.zeros((T+sequence_length,N,D),dtype=theano.config.floatX)
 			to_return[nm][:T,:,:] = teX[nm]
 			teY[nm] = []
+			nodeName = nm.split(':')[0]
+			nodeFeatures_t_1[nodeName] = teX_original_nodeFeatures[nm][-1:,:,:]
 
 
 		for i in range(sequence_length):
@@ -393,8 +405,9 @@ class DRA(object):
 			for nm in nodeNames:
 				nt = nm.split(':')[1]
 				nodeName = nm.split(':')[0]
-				nodeRNNFeatures = graph.getNodeFeature(nodeName,nodeFeatures,poseDataset)
+				nodeRNNFeatures = graph.getNodeFeature(nodeName,nodeFeatures,nodeFeatures_t_1,poseDataset)
 				to_return[nm][T+i,:,:] = nodeRNNFeatures[0,:,:]
+			nodeFeatures_t_1 = copy.deepcopy(nodeFeatures)
 		for nm in nodeNames:
 			teY[nm] = np.array(teY[nm])
 		del teX

@@ -391,7 +391,7 @@ class DRAanticipation(object):
 							validation_file.close()
 
 					else:
-						predict = self.predict_output(trX_validation,trY_validation[train_for],predictfn,train_for)
+						predict = self.predict_output(trX_validation,trY_validation[train_for],predictfn,train_for=train_for)
 						validation_acc = {}
 						for nm in predict.keys():
 							validation_acc[nm] = self.microaccuracy(predict[nm])
