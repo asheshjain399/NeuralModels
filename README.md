@@ -13,8 +13,9 @@ neuralmodels: Python module containing definition of layers, optimization method
 
 NeuralModels comes with some pre-implemented models in the models directory
 
-```models/DRA.py''' 
-
+```
+models/DRA.py
+``` 
 is the structural-RNN code for doing deep learnin on spatio-temporal graphs. 
 
 
