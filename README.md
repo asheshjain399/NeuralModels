@@ -62,7 +62,29 @@ this is the input layer of the architecture when we have precomputed feature vec
 ```
 T x N x D
 ```
-T is the number of time-steps
-N is the number of sequences
-D is the dimension of each feature vector
+T is the number of time-steps.
+N is the number of sequences.
+D is the dimension of each feature vector.
 
+# Creating a new deep architecture
+Say if you need to create a new architecture with 3-layers of LSTM, and the input into the architecture are precomputed feature vectors, and the output is softmax scores. We first import the relevant python modules:
+```
+import theano
+from theano import tensor as T
+from neuralmodels.layers import *
+from neuralmodels.models import *
+from neuralmodels.updates import Adagrad
+from neuralmodels.costs import softmax_loss
+```
+
+Next we define our architecture:
+```
+layers = [TemporalInputFeatures(inputDim),LSTM(size=512),LSTM(size=512),LSTM(size=512),softmax(size=numClasses)]
+```
+Now we will create the model and build its computation graph:
+```
+trY = T.lmatrix()
+initial_step_size = 1e-3
+model = RNN(layers,softmax_loss,trY,initial_step_size,Adagrad())
+```
+In order to train the architecture see the ``` fitModel() ``` function in 
