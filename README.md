@@ -1,5 +1,5 @@
 # NeuralModels
-A library for neural networks built using Theano.
+A library for Recurrent Neural Networks built on top of Theano. It allows quick prototyping of complicated structures of Recurrent Neural Networks. Checkout some of the existing architectures (and research papers) implemented using NeuralModels https://github.com/asheshjain399/RNNexp/
 
 ## INSTALL
 
