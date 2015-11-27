@@ -16,7 +16,7 @@ NeuralModels comes with some pre-implemented models in the models directory
 ```
 models/DRA.py
 ``` 
-is the structural-RNN code for doing deep learnin on spatio-temporal graphs. 
+is the structural-RNN code for doing deep learning on spatio-temporal graphs. The paper is present here http://www.cs.stanford.edu/people/ashesh/srnn
 
 
 character-rnn: This is an application of neuralmodels for learning word-based language model. 
