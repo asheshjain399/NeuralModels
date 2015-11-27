@@ -1,4 +1,3 @@
-from BidirectionalRNN import BidirectionalRNN
 from ConcatenateFeatures import ConcatenateFeatures 
 from ConcatenateVectors import ConcatenateVectors
 from DenseInputFeatures import DenseInputFeatures

@@ -8,6 +8,7 @@ from neuralmodels.costs import softmax_loss
 from neuralmodels.models import *
 from neuralmodels.predictions import OutputMaxProb, OutputSampleFromDiscrete
 from neuralmodels.layers import *
+import os
 
 def text_prediction(class_ids_reverse,p_labels):
 	N = p_labels.shape[1]
@@ -48,6 +49,9 @@ if __name__ == '__main__':
 	layers = [OneHot(num_classes),LSTM(),LSTM(),LSTM(),softmax(num_classes)]
 
 	trY = T.lmatrix()
+
+	if not os.path.exists('checkpoints/'):
+		os.mkdir('checkpoints/')
 
 	# Initializing network
 	rnn = RNN(layers,softmax_loss,trY,1e-3)
