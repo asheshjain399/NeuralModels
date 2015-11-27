@@ -58,13 +58,14 @@ this layer generates the one-hot vector representation, this is commonly the inp
 ```
 layers/TemporalInputFeatures.py
 ```
-this is the input layer of the architecture when we have precomputed feature vectors. The shape of input is:
-```
-T x N x D
-```
-T is the number of time-steps.
-N is the number of sequences.
-D is the dimension of each feature vector.
+this is the input layer of the architecture when we have precomputed feature vectors. The shape of input is ``` T x N x D ```
+
+```T``` is the number of time-steps.
+
+```N``` is the number of sequences.
+
+```D``` is the dimension of each feature vector.
+
 
 # Creating a new deep architecture
 Say if you need to create a new architecture with 3-layers of LSTM, and the input into the architecture are precomputed feature vectors, and the output is softmax scores. We first import the relevant python modules:
@@ -87,4 +88,4 @@ trY = T.lmatrix()
 initial_step_size = 1e-3
 model = RNN(layers,softmax_loss,trY,initial_step_size,Adagrad())
 ```
-In order to train the architecture see the ``` fitModel() ``` function in 
+In order to train the architecture see the ``` fitModel() ``` function in  ``` models/RNN.py ```
