@@ -29,3 +29,40 @@ models/RNN.py
 This is a simple RNN implementation.
 
 In order to implement strucutures of RNN see examples such as models/SharedRNN.py
+
+## Layers
+
+Many standard layers are pre-implemented in NeuralModels:
+
+```
+layers/LSTM.py
+```
+implements the standard LSTM with gradient clipping (tune-able parameters)
+
+```
+layers/multilayerLSTM.py
+```
+Use this to create a stack of LSTM with skip-input and output connections. If skip-input and output connections are not desired, then simply create an array of layers/LSTM.py
+```
+layers/simpleRNN.py
+```
+implements the Recurrent Neural Network
+```
+layers/softmax.py
+```
+this is the softmax layer, or commonly the output layer of the architecture.
+```
+layers/OneHot.py
+```
+this layer generates the one-hot vector representation, this is commonly the input layer of the architecture when dealing with finite size vocabulary (eg. in NLP)
+```
+layers/TemporalInputFeatures.py
+```
+this is the input layer of the architecture when we have precomputed feature vectors. The shape of input is:
+```
+T x N x D
+```
+T is the number of time-steps
+N is the number of sequences
+D is the dimension of each feature vector
+
