@@ -102,7 +102,7 @@ class LSTM(object):
 
 		return h_t,c_t
 
-	def output(self,seq_output=True):
+	def output(self,seq_output=True,get_cell=False):
 		X = []
 		if self.skip_layer:
 			X = T.concatenate([self.layer_below.output(),self.skip_layer.output()],axis=2)
@@ -132,6 +132,10 @@ class LSTM(object):
 					truncate_gradient=self.truncate_gradient
 				)
 		'''
+
+		if get_cell:
+			return cells
+
 		if seq_output:
 			return out
 			# dim = T x N x self.size 

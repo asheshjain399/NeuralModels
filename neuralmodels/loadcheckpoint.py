@@ -69,6 +69,63 @@ def load(path):
 	model = model_class(**model['config'])
 	return model
 
+
+def loadDRAskeleton(path):
+	model = cPickle.load(open(path))
+	model_class = eval(model['model'])  #getattr(models, model['model'])
+
+	edgeRNNs = {}
+	for k in model['config']['edgeRNNs'].keys():
+		layerlist = model['config']['edgeRNNs'][k]
+		edgeRNNs[k] = []
+		for layer in layerlist:
+			if 'nested_layers' in layer['config'].keys():
+				if layer['config']['nested_layers']:
+					layer = loadLayers(layer,['layers'])
+			edgeRNNs[k].append(eval(layer['layer'])(**layer['config']))
+		#edgeRNNs[k] = [eval(layer['layer'])(**layer['config']) for layer in layerlist]
+	model['config']['edgeRNNs'] = edgeRNNs
+
+	nodeRNNs = {}
+	for k in model['config']['nodeRNNs'].keys():
+		layerlist = model['config']['nodeRNNs'][k]
+		nodeRNNs[k] = []
+		for layer in layerlist:
+			if 'nested_layers' in layer['config'].keys():
+				if layer['config']['nested_layers']:
+					layer = loadLayers(layer,['layers'])
+			nodeRNNs[k].append(eval(layer['layer'])(**layer['config']))
+		#nodeRNNs[k] = [eval(layer['layer'])(**layer['config']) for layer in layerlist]
+	model['config']['nodeRNNs'] = nodeRNNs
+	return model,model_class
+
+def loadmultipleDRA(path1,path2,swap_edgernn,swap_edgernn2,swap_nodernn,swap_nodernn2):
+	[model,model_class] = loadDRAskeleton(path1)
+	[model_2,model_class_2] = loadDRAskeleton(path2)
+
+	key1 = model['config']['edgeRNNs'].keys()
+	key2 = model_2['config']['edgeRNNs'].keys()
+
+	for en,en2 in zip(swap_edgernn,swap_edgernn2):
+	
+		e1 = en
+		if not en in key1:
+			kk = en.split('_')
+			e1 = kk[1] + '_' + kk[0]
+	
+		e2 = en2
+		if not en2 in key2:
+			kk = en2.split('_')
+			e2 = kk[1] + '_' + kk[0]
+		
+		model['config']['edgeRNNs'][e1] = model_2['config']['edgeRNNs'][e2]
+	
+	for en,en2 in zip(swap_nodernn,swap_nodernn2):
+		model['config']['nodeRNNs'][en] = model_2['config']['nodeRNNs'][en2]
+
+	model = model_class(**model['config'])
+	return model
+
 def loadDRA(path):
 	model = cPickle.load(open(path))
 	model_class = eval(model['model'])  #getattr(models, model['model'])

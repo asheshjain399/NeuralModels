@@ -39,6 +39,7 @@ class DRA(object):
 		self.predict_node_loss = {}
 		self.grad_norm = {}
 		self.norm = {}
+		self.get_cell = {}
 
 		self.update_type = update_type
 		self.update_type.lr = self.learning_rate
@@ -102,6 +103,8 @@ class DRA(object):
 		
 			self.grad_norm[nt] = theano.function([self.X[nt],self.Y[nt],self.std],self.norm[nt],on_unused_input='ignore')
 		
+			self.get_cell[nt] = theano.function([self.X[nt],self.std],nodeLayers[0].layers[0].output(get_cell=True),on_unused_input='ignore')
+		
 
 		self.num_params = 0
 		for nt in nodeTypes:
@@ -131,7 +134,7 @@ class DRA(object):
 		trX_forecasting=None,trY_forecasting=None,trX_forecast_nodeFeatures=None,rng=np.random.RandomState(1234567890),iter_start=None,
 		decay_type=None,decay_schedule=None,decay_rate_schedule=None,
 		use_noise=False,noise_schedule=None,noise_rate_schedule=None,
-		new_idx=None,featureRange=None,poseDataset=None,graph=None,maxiter=10000):
+		new_idx=None,featureRange=None,poseDataset=None,graph=None,maxiter=10000,unNormalizeData=None):
 	
 		from neuralmodels.loadcheckpoint import saveDRA
 
@@ -195,6 +198,18 @@ class DRA(object):
 			trY_forecasting = self.convertToSingleVec(trY_forecasting,new_idx,featureRange)
 			print 'trY_forecasting shape: {0}'.format(trY_forecasting.shape)
 			assert(skel_dim == trY_forecasting.shape[2])
+
+		'''Comverting validation set to a single array when doing drop joint experiments'''
+		gth = None
+		T1 = -1
+		N1 = -1	
+		if poseDataset.drop_features and unNormalizeData is not None:
+			trY_validation = self.convertToSingleVec(trY_validation,new_idx,featureRange)
+			[T1,N1,D1] = trY_validation.shape
+			trY_validation_new = np.zeros((T1,N1,poseDataset.data_mean.shape[0]))
+			for i in range(N1):
+				trY_validation_new[:,i,:] = np.float32(unNormalizeData(trY_validation[:,i,:],poseDataset.data_mean,poseDataset.data_std,poseDataset.dimensions_to_ignore))
+			gth = trY_validation_new[poseDataset.drop_start-1:poseDataset.drop_end-1,:,poseDataset.drop_id]
 
 		if unequalSize:
 			batch_size = Nmax
@@ -312,7 +327,7 @@ class DRA(object):
 					self.saveForecastError(skel_err,err_per_dof,path,fname)
 
 			'''Computing error on validation set'''
-			if (trX_validation is not None) and (trY_validation is not None):
+			if (trX_validation is not None) and (trY_validation is not None) and (not poseDataset.drop_features):
 				validation_error = 0.0
 				Tvalidation = 0
 				for nm in trX_validation.keys():
@@ -321,6 +336,19 @@ class DRA(object):
 					Tvalidation = trX_validation[nm].shape[0]
 				validation_set[-1] = validation_error
 				termout = 'Validation: loss={0} normalized={1} skel_err={2}'.format(validation_error,(validation_error*1.0/(Tvalidation*skel_dim)),np.sqrt(validation_error*1.0/Tvalidation))
+				complete_logger += termout + '\n'
+				print termout
+		
+			if (trX_validation is not None) and (trY_validation is not None) and (poseDataset.drop_features) and (unNormalizeData is not None):
+				prediction = self.predict_nextstep(trX_validation)
+				prediction = self.convertToSingleVec(prediction,new_idx,featureRange)
+				prediction_new = np.zeros((T1,N1,poseDataset.data_mean.shape[0]))
+				for i in range(N1):
+					prediction_new[:,i,:] = np.float32(unNormalizeData(prediction[:,i,:],poseDataset.data_mean,poseDataset.data_std,poseDataset.dimensions_to_ignore))
+				predict = prediction_new[poseDataset.drop_start-1:poseDataset.drop_end-1,:,poseDataset.drop_id]
+				joint_error = np.linalg.norm(predict - gth)
+				validation_set[-1] = joint_error
+				termout = 'Missing joint error {0}'.format(joint_error )
 				complete_logger += termout + '\n'
 				print termout
 
@@ -365,6 +393,24 @@ class DRA(object):
 				f.write(st+'\n')
 			f.close()
 	
+	def saveCellState(self,cellstate,path,fname):
+		nodeNames = cellstate.keys()
+		nm = nodeNames[0]
+		print nodeNames
+		T = cellstate[nm].shape[0]
+		N = cellstate[nm].shape[1]
+		D = cellstate[nm].shape[2]
+		for j in range(N):
+			f = open('{0}{2}_N_{1}'.format(path,j,fname),'w')
+			for nm in nodeNames:
+				motion = cellstate[nm][:,j,:]
+				for i in range(T):
+					st = ''
+					for k in range(D):
+						st += str(motion[i,k]) + ','
+					st = st[:-1]
+					f.write(st+'\n')
+			f.close()
 
 
 	def predict_output(self,teX):
@@ -412,6 +458,51 @@ class DRA(object):
 			teY[nm] = np.array(teY[nm])
 		del teX
 		return teY
+
+	def predict_nextstep(self,teX):
+		nodeNames = teX.keys()
+		prediction = {}
+		for nm in nodeNames:
+			nt = nm.split(':')[1]
+			prediction[nm] = self.predict_node[nt](teX[nm],1e-5)
+		return prediction
+		
+	def predict_cell(self,teX_original,teX_original_nodeFeatures,sequence_length=100,poseDataset=None,graph=None):
+		teX = copy.deepcopy(teX_original)
+		nodeNames = teX.keys()
+
+		teY = {}
+		to_return = {}
+		T = 0
+		nodeFeatures_t_1 = {}
+		for nm in nodeNames:
+			[T,N,D] = teX[nm].shape
+			to_return[nm] = np.zeros((T+sequence_length,N,D),dtype=theano.config.floatX)
+			to_return[nm][:T,:,:] = teX[nm]
+			teY[nm] = []
+			nodeName = nm.split(':')[0]
+			nodeFeatures_t_1[nodeName] = teX_original_nodeFeatures[nm][-1:,:,:]
+		for i in range(sequence_length):
+			nodeFeatures = {}
+			for nm in nodeNames:
+				nt = nm.split(':')[1]
+				nodeName = nm.split(':')[0]
+				prediction = self.predict_node[nt](to_return[nm][:(T+i),:,:],1e-5)
+				#nodeFeatures[nodeName] = np.array([prediction])
+				nodeFeatures[nodeName] = prediction[-1:,:,:]
+				teY[nm].append(nodeFeatures[nodeName][0,:,:])
+			for nm in nodeNames:
+				nt = nm.split(':')[1]
+				nodeName = nm.split(':')[0]
+				nodeRNNFeatures = graph.getNodeFeature(nodeName,nodeFeatures,nodeFeatures_t_1,poseDataset)
+				to_return[nm][T+i,:,:] = nodeRNNFeatures[0,:,:]
+			nodeFeatures_t_1 = copy.deepcopy(nodeFeatures)
+		cellstates = {}
+		for nm in nodeNames:
+			nt = nm.split(':')[1]
+			nodeName = nm.split(':')[0]
+			cellstates[nm] = self.get_cell[nt](to_return[nm],1e-5)
+		return cellstates
 
 	def concatenateDimensions(self,dictToconcatenate,axis=2):
 		conctArr = []

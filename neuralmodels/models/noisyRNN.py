@@ -52,7 +52,7 @@ class noisyRNN(object):
 		learning_rate_decay=0.97,std=1e-5,decay_after=-1,trX_validation=None,trY_validation=None,
 		trX_forecasting=None,trY_forecasting=None,rng=np.random.RandomState(1234567890),iter_start=None,
 		decay_type=None,decay_schedule=None,decay_rate_schedule=None,
-		use_noise=False,noise_schedule=None,noise_rate_schedule=None,maxiter=10000):
+		use_noise=False,noise_schedule=None,noise_rate_schedule=None,maxiter=10000,poseDataset=None,unNormalizeData=None):
 
 		from neuralmodels.loadcheckpoint import save
 
@@ -100,6 +100,18 @@ class noisyRNN(object):
 		
 		#iterations = epoch_count * batches_in_one_epoch * 1.0
 	
+		'''Comverting validation set to a single array when doing drop joint experiments'''
+		gth = None
+		T1 = -1
+		N1 = -1	
+		if poseDataset.drop_features and unNormalizeData is not None:
+			[T1,N1,D1] = trY_validation.shape
+			trY_validation_new = np.zeros((T1,N1,poseDataset.data_mean.shape[0]))
+			for i in range(N1):
+				trY_validation_new[:,i,:] = np.float32(unNormalizeData(trY_validation[:,i,:],poseDataset.data_mean,poseDataset.data_std,poseDataset.dimensions_to_ignore))
+			gth = trY_validation_new[poseDataset.drop_start-1:poseDataset.drop_end-1,:,poseDataset.drop_id]
+
+
 		Tvalidation = 0
 		Dvalidation = 0
 		if (trX_validation is not None):
@@ -128,6 +140,10 @@ class noisyRNN(object):
 						std = noise_rate_schedule[i]
 						noise_schedule[i] = -1
 
+			if poseDataset is not None:
+				trX,trY = poseDataset.getMalikFeatures(std)
+				trX_validation,trY_validation = poseDataset.getMalikValidationFeatures(std)
+				trX_forecasting,trY_forecasting = poseDataset.getMalikTrajectoryForecasting(std)
 
 			'''Permuting before mini-batch iteration'''
 			shuffle_list = rng.permutation(numrange)
@@ -173,10 +189,22 @@ class noisyRNN(object):
 					save(self,"{0}checkpoint.{1}".format(path,iterations))
 
 			'''Computing error on validation set'''
-			if (trX_validation is not None) and (trY_validation is not None):
+			if (trX_validation is not None) and (trY_validation is not None) and (not poseDataset.drop_features):
 				validation_error = self.prediction_loss(trX_validation,trY_validation,std)
 				validation_set[-1] = validation_error
 				termout = 'Validation: loss={0} normalized={1} skel_err={2}'.format(validation_error,(validation_error*1.0/(Tvalidation*Dvalidation)),np.sqrt(validation_error*1.0/Tvalidation))
+				complete_logger += termout + '\n'
+				print termout
+	
+			if (trX_validation is not None) and (trY_validation is not None) and (poseDataset.drop_features) and (unNormalizeData is not None):
+				prediction = self.predict_nextstep(trX_validation)
+				prediction_new = np.zeros((T1,N1,poseDataset.data_mean.shape[0]))
+				for i in range(N1):
+					prediction_new[:,i,:] = np.float32(unNormalizeData(prediction[:,i,:],poseDataset.data_mean,poseDataset.data_std,poseDataset.dimensions_to_ignore))
+				predict = prediction_new[poseDataset.drop_start-1:poseDataset.drop_end-1,:,poseDataset.drop_id]
+				joint_error = np.linalg.norm(predict - gth)
+				validation_set[-1] = joint_error
+				termout = 'Missing joint error {0}'.format(joint_error )
 				complete_logger += termout + '\n'
 				print termout
 
@@ -235,6 +263,10 @@ class noisyRNN(object):
 			future_sequence.append(prediction)
 		del teX
 		return np.array(future_sequence)
+
+	def predict_nextstep(self,teX):
+		prediction = self.predict(teX,1e-5)
+		return prediction
 
 	def predict_output(self,teX,predictfn):
 		prediction = self.predict(teX)

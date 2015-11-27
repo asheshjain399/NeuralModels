@@ -366,13 +366,26 @@ class DRAanticipation(object):
 						predict_detection = self.predict_output(trX_validation,trY_validation['detection'],predictfn,'detection')
 						predict_anticipation = self.predict_output(trX_validation,trY_validation['anticipation'],predictfn,'anticipation')
 
+						[detection_belief,detection_labels] = self.predict_nextstep(trX_validation,trY_validation['detection'],predictfn,'detection')
+						[anticipation_belief,anticipation_labels] = self.predict_nextstep(trX_validation,trY_validation['anticipation'],predictfn,'anticipation')
+
+
 						validation_acc_detection = {}
+						validation_pr_detection = {}
+						validation_re_detection = {}
 						for nm in predict_detection.keys():
 							validation_acc_detection[nm] = self.microaccuracy(predict_detection[nm])
+							temp = self.confusionMat(predict_detection[nm])
+							validation_pr_detection[nm] = temp[-2]
+							validation_re_detection[nm] = temp[-1]
 						validation_acc_anticipation = {}
+						validation_pr_anticipation = {}
+						validation_re_anticipation = {}
 						for nm in predict_anticipation.keys():
 							validation_acc_anticipation[nm] = self.microaccuracy(predict_anticipation[nm])
-
+							temp = self.confusionMat(predict_anticipation[nm])
+							validation_pr_anticipation[nm] = temp[-2]
+							validation_re_anticipation[nm] = temp[-1]
 						termout = 'Detection Validation: H={0} O={1}'.format(validation_acc_detection['H:H'],validation_acc_detection['O:O'])
 						complete_logger += termout + '\n'
 						print termout
@@ -383,24 +396,81 @@ class DRAanticipation(object):
 						validation_file = None
 						if path is not None:
 							validation_file = open('{0}{2}_{1}'.format(path,'joint_validation_acc_detection',train_for),'a')
-							validation_file.write('iter={0} H={1} O={2}\n'.format(iterations,validation_acc_detection['H:H'],validation_acc_detection['O:O']))
+							validation_file.write('iter={0} H={1} [{3};{4}] O={2} [{5};{6}]\n'.format(iterations,validation_acc_detection['H:H'],validation_acc_detection['O:O'],validation_pr_detection['H:H'],validation_re_detection['H:H'],validation_pr_detection['O:O'],validation_re_detection['O:O']))
 							validation_file.close()
 						if path is not None:
 							validation_file = open('{0}{2}_{1}'.format(path,'joint_validation_acc_anticipation',train_for),'a')
-							validation_file.write('iter={0} H={1} O={2}\n'.format(iterations,validation_acc_anticipation['H:H'],validation_acc_anticipation['O:O']))
+							validation_file.write('iter={0} H={1} [{3};{4}] O={2} [{5};{6}]\n'.format(iterations,validation_acc_anticipation['H:H'],validation_acc_anticipation['O:O'],validation_pr_anticipation['H:H'],validation_re_anticipation['H:H'],validation_pr_anticipation['O:O'],validation_re_anticipation['O:O']))
 							validation_file.close()
+						
+						if path is not None:
+							cc = 1
+							for b,ypr,y_ in zip(detection_belief['H:H'],detection_labels['H:H'],trY_validation['detection']['H:H']):
+								belief_file = open('{0}detection_belief_{1}_{2}'.format(path,cc,iterations),'w')
+								for i in range(b.shape[0]):
+									st = '{0} {1} '.format(y_[i,0],ypr[i,0])
+									for val in b[i,:]:
+										st = st + '{0} '.format(val)
+									st = st.strip() + '\n'
+									belief_file.write(st)
+								belief_file.close()
+								cc += 1
+
+							cc = 1
+							for b,ypr,y_ in zip(anticipation_belief['H:H'],anticipation_labels['H:H'],trY_validation['anticipation']['H:H']):
+								belief_file = open('{0}anticipation_belief_{1}_{2}'.format(path,cc,iterations),'w')
+								for i in range(b.shape[0]):
+									st = '{0} {1} '.format(y_[i,0],ypr[i,0])
+									for val in b[i,:]:
+										st = st + '{0} '.format(val)
+									st = st.strip() + '\n'
+									belief_file.write(st)
+								belief_file.close()
+								cc += 1
+
+							cc = 1
+							for b,ypr,y_ in zip(detection_belief['O:O'],detection_labels['O:O'],trY_validation['detection']['O:O']):
+								belief_file = open('{0}detection_objbelief_{1}_{2}'.format(path,cc,iterations),'w')
+								for i in range(b.shape[0]):
+									st = '{0} {1} '.format(y_[i,0],ypr[i,0])
+									for val in b[i,:]:
+										st = st + '{0} '.format(val)
+									st = st.strip() + '\n'
+									belief_file.write(st)
+								belief_file.close()
+								cc += 1
+
+							cc = 1
+							for b,ypr,y_ in zip(anticipation_belief['O:O'],anticipation_labels['O:O'],trY_validation['anticipation']['O:O']):
+								belief_file = open('{0}anticipation_objbelief_{1}_{2}'.format(path,cc,iterations),'w')
+								for i in range(b.shape[0]):
+									st = '{0} {1} '.format(y_[i,0],ypr[i,0])
+									for val in b[i,:]:
+										st = st + '{0} '.format(val)
+									st = st.strip() + '\n'
+									belief_file.write(st)
+								belief_file.close()
+								cc += 1
+
 
 					else:
 						predict = self.predict_output(trX_validation,trY_validation[train_for],predictfn,train_for=train_for)
 						validation_acc = {}
+						validation_pr = {}
+						validation_re = {}
 						for nm in predict.keys():
 							validation_acc[nm] = self.microaccuracy(predict[nm])
+							temp = self.confusionMat(predict[nm])
+							validation_pr[nm] = temp[-2]
+							validation_re[nm] = temp[-1]
+							
 						termout = 'Validation: H={0} O={1}'.format(validation_acc['H:H'],validation_acc['O:O'])
 						complete_logger += termout + '\n'
 						validation_file = None
 						if path is not None:
 							validation_file = open('{0}{2}_{1}'.format(path,'validation_acc',train_for),'a')
-							validation_file.write('iter={0} H={1} O={2}\n'.format(iterations,validation_acc['H:H'],validation_acc['O:O']))
+							#validation_file.write('iter={0} H={1} O={2}\n'.format(iterations,validation_acc['H:H'],validation_acc['O:O']))
+							validation_file.write('iter={0} H={1} [{3};{4}] O={2} [{5};{6}]\n'.format(iterations,validation_acc['H:H'],validation_acc['O:O'],validation_pr['H:H'],validation_re['H:H'],validation_pr['O:O'],validation_re['O:O']))
 							validation_file.close()
 						print termout
 
@@ -432,6 +502,37 @@ class DRAanticipation(object):
 		acc = 1.0*(len(wrng_pr[0])) / len(Y_pr)
 		return acc
 
+	def predict_nextstep(self,teX,teY,predictfn,train_for='detection'):
+		nodeNames = teX.keys()
+
+		predict = {}
+		labels = {}
+		for nm in nodeNames:
+			predict[nm] = []
+			labels[nm] = []
+			nt = nm.split(':')[1]
+			
+			for X,Y in zip(teX[nm],teY[nm]):
+				prediction = self.predict_node[nt][train_for](X,1e-5)
+				predict[nm].append(prediction[:,0,:])
+				shape = prediction.shape
+				Y_pr = []
+				if prediction.ndim > 2:
+					# prediction dim = T x N x D
+					# Sequence prediction
+					Y_pr = prediction.reshape(shape[0]*shape[1],shape[2])
+					Y_pr = predictfn(Y_pr)
+					Y_pr = Y_pr.reshape(shape[0],shape[1])
+					# Output dim = T x N
+				else:
+					# prediction dim = N x D
+					# Single prediction at the end of sequence
+					Y_pr = predictfn(prediction)
+					# Output dim = N
+				labels[nm].append(Y_pr)
+		return predict,labels
+			
+
 
 	def predict_output(self,teX,teY,predictfn,train_for='detection'):
 		nodeNames = teX.keys()
@@ -462,3 +563,41 @@ class DRAanticipation(object):
 				predict[nm]['prediction'].extend(list(prediction[:,0]))
 		return predict
 
+	def confusionMat(self,predict):
+
+		P = np.array(predict['prediction'])
+		Y = np.array(predict['gt'])
+
+		Y = Y - 1
+		P = P - 1
+
+		size = np.max(Y) + 1
+		confMat = np.zeros((size,size))
+		for p,y in zip(P,Y):
+			if p < 0 or p >= size:
+				continue 
+			confMat[p,y] += 1.0
+		col_sum = np.reshape(np.sum(confMat,axis=1),(size,1))
+		row_sum = np.reshape(np.sum(confMat,axis=0),(1,size))
+		precision_confMat = confMat/np.repeat(col_sum,size,axis=1)
+		recall_confMat = confMat/np.repeat(row_sum,size,axis=0)
+
+		pr = 0.0
+		cc = 0.0
+		for x in np.diag(precision_confMat):
+			if not math.isnan(x):
+				pr += x
+				cc += 1.0
+		if cc > 0:
+			pr = pr / cc		
+
+		re = 0.0
+		cc = 0.0
+		for x in np.diag(recall_confMat):
+			if not math.isnan(x):
+				re += x
+				cc += 1.0
+		if cc > 0:
+			re = re / cc		
+
+		return confMat,precision_confMat,recall_confMat,pr,re
